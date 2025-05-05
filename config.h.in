@@ -1,9 +1,9 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 #cmakedefine PROJECT_DIR "@PROJECT_DIR@"
-#cmakedefine CSV "@CSV@"
+#cmakedefine DATA "@DATA@"
 #cmakedefine RESULT "@RESULT@"
-#cmakedefine BENCH "@BENCH@"
+#cmakedefine PROCESSED "@PROCESSED@"
 #cmakedefine GPU_ON "@GPU_ON@"
 #cmakedefine DEBUG "@DEBUG@"
 #endif

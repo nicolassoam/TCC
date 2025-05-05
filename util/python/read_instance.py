@@ -12,9 +12,23 @@ def read_instance(file_path: str) -> pd.DataFrame:
     except Exception as e:
         raise ValueError(f"Error reading the file {file_path}: {e}")
     # filter to keep only first 6 sheets
-   
-    df = {k: v for k, v in df.items() if k in ['ROTAS', 'ROTAS2', 'ROTAS3', 'PASSAGEM', 'PASSAGEM2', 'CASK']}
+    # df['PASSAGEM'].join(df['PASSAGEM2'], how='outer', lsuffix='_left', rsuffix='_right')
+    df['PASSAGEM'] = df['PASSAGEM'].append(df['PASSAGEM2'].iloc[1:], ignore_index=True)
+    df.pop('PASSAGEM2')
+    
+    df = {k: v for k, v in df.items() if k in ['ROTAS', 'ROTAS2', 'ROTAS3', 'PASSAGEM', 'CASK']}
     
     return df 
 
-print(read_instance("../../data/DadosTCCv2.xlsx")['ROTAS'])
+def create_csv_for_each_sheet(file_path: str) -> None:
+    df = read_instance(file_path)
+    
+    for sheet_name, data in df.items():
+        csv_file_path = f"../../data/processed/{sheet_name}.csv"
+        # create file
+        with open(csv_file_path, 'w') as f:
+            data.to_csv(f, index=None, header = None, sep=';', line_terminator='\n')
+            print(f"Created {csv_file_path} from {sheet_name} sheet.")
+        
+
+create_csv_for_each_sheet("../../data/DadosTCCv2.xlsx")
