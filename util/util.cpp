@@ -95,15 +95,11 @@ namespace util
         String rotas2Path = instances[ROTAS2];
         StringMatrix rotas2 = readFile(rotas2Path);
 
-        /* ROTAS3 */
-        String rotas3Path = instances[ROTAS3];
-        StringMatrix rotas3 = readFile(rotas3Path);
 
         instanceMatrix.push_back(cask);
         instanceMatrix.push_back(passagem);
         instanceMatrix.push_back(rotas);
         instanceMatrix.push_back(rotas2);
-        instanceMatrix.push_back(rotas3);
         return instanceMatrix;
     }
 

@@ -1,6 +1,9 @@
 #include "gp.h"
 #include <algorithm>
 #include <execution>
+
+#define AIRCRAFT_TYPES 7
+#define CONSTRAINT_PEN 1000000
 namespace GP
 {
 
@@ -51,11 +54,74 @@ namespace GP
         return children;
     }
 
-    Individual search(int generations, int populationSize, float mr, float cr)
+    Population initializePopulation(int populationSize, int aircraftTypes, int flightLegs, int timeWindows)
     {
         Population pop;
-        pop = initializePopulation(populationSize);
-        evaluatePopulation();
+
+        for(int i = 0; i < populationSize; i++)
+        {
+            Individual ind = Individual(aircraftTypes, flightLegs, timeWindows);
+
+            std::vector<int>& fleetSize = ind.ch.fleetSize;
+            std::vector<int>& aircraftTypeDecisionVariable1 = ind.ch.aircraftTypeDecisionVariable1;
+            IntMatrix& aircraftTypeDecisionVariable2 = ind.ch.aircraftTypeDecisionVariable2;
+            std::vector<IntMatrix>& flightFrequency = ind.ch.flightFrequency;
+            std::vector<IntMatrix>& passengerNumber = ind.ch.passengerNumber;
+            for(int j = 0; j < aircraftTypes; j++)
+            {
+                fleetSize.push_back(rand() % 300 + 1);
+                aircraftTypeDecisionVariable1.push_back(rand() % 1);
+            }
+
+            for(int k = 0; k < flightLegs; k++)
+            {
+                for(int l = 0; l < aircraftTypes; l++)
+                {
+                    aircraftTypeDecisionVariable2[k][l] = rand() % 1;
+                }
+
+                for(int m = 0; m < timeWindows; m++)
+                {
+                    for(int n = 0; n < aircraftTypes; n++)
+                    {
+                        flightFrequency[k][m][n] = rand() % 300;
+                        passengerNumber[k][m][n] = rand() % 300;
+                    }
+                }
+
+            }
+            pop.push_back(ind);
+        }
+
+        return pop;
+    }
+
+    void evaluateIndividual (Individual& ind, InstanceType instance)
+    {
+        // pick vectors from individual
+        std::vector<int>& fleetSize = ind.ch.fleetSize;
+        std::vector<int>& aircraftTypeDecisionVariable1 = ind.ch.aircraftTypeDecisionVariable1;
+        IntMatrix& aircraftTypeDecisionVariable2 = ind.ch.aircraftTypeDecisionVariable2;
+        std::vector<IntMatrix>& flightFrequency = ind.ch.flightFrequency;
+        std::vector<IntMatrix>& passengerNumber = ind.ch.passengerNumber;
+
+        //check constraints, if violated worst fitness
+    }
+
+    Individual search(InstanceType instance, int generations, int populationSize, float mr, float cr)
+    {
+        Population pop;
+        int aircraftTypes = util::passagem().size() - 2;
+        int flightLegs = util::cask()[CaskPassagem::DESTINO].size();
+        int timeWindows = util::rotas2()[Rotas2_3::TURNO].size();
+        
+        pop = initializePopulation(populationSize, aircraftTypes, flightLegs, timeWindows);
+
+        for (int i = 0; i < POPULATION_SIZE; i++)
+        {
+            evaluateIndividual(pop[i]);
+        }
+
         std::sort(std::execution::par_unseq,pop.begin(), pop.end(), [](Individual& a, Individual& b){return a.fitness < b.fitness;});
         Individual best = pop[0];
 

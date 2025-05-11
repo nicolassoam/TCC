@@ -31,7 +31,6 @@ namespace util
     StringMatrix passagem() { return currentInstance[PASSAGEM]; }
     StringMatrix rotas() { return currentInstance[ROTAS]; }
     StringMatrix rotas2() { return currentInstance[ROTAS2]; }
-    StringMatrix rotas3() { return currentInstance[ROTAS3]; }
 
 }
 

@@ -6,8 +6,7 @@ enum Sheets
     CASK = 0,
     PASSAGEM = 1,
     ROTAS = 2,
-    ROTAS2 = 3,
-    ROTAS3 = 4
+    ROTAS2 = 3
 };
 
 namespace Rotas
