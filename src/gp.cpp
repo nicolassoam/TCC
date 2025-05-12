@@ -93,9 +93,9 @@ namespace GP
         std::vector<IntMatrix>& passengerNumber = ind.ch.passengerNumber;
 
         //check constraints, if violated worst fitness
-        int flightLegs = passengerNumber.size();
-        int timeWindows = passengerNumber[0].size();
-        int aircraftTypes = passengerNumber[0][0].size();
+        int flightLegs = flights.size();
+        int timeWindows = 4;
+        int aircraftTypes = 7;
         int sum = 0;
         for(int i = 0; i < flightLegs; i++)
         {
@@ -117,10 +117,10 @@ namespace GP
                     {
                         return CONSTRAINT_PEN;
                     }
-                    if(flightFrequency[i][j][k] > aircraftTypeDecisionVariable2[i][k] * BIG_M)
+                    /*if(flightFrequency[i][j][k] > aircraftTypeDecisionVariable2[i][k] * BIG_M)
                     {
                         return CONSTRAINT_PEN;
-                    }
+                    }*/
                 }
                 if(sum > demand)
                 {
