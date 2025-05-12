@@ -10,8 +10,9 @@ int main()
     InstanceType instances = util::loadInstance();
     StringMatrix cask = util::cask(instances);
     StringMatrix flightData = util::rotas2(instances);
+    StringMatrix passagem = util::passagem(instances);
     std::vector<Flight> flights;
-    std::map<String, std::vector<double>> prices = util::mapODs(flightData);
+    std::map<String, std::vector<double>> prices = util::mapODs(passagem);
     std::map<String, std::vector<double>> caskValues = util::mapODs(cask);
     Individual individual = GP::search(prices, caskValues, instances, 500, POPULATION_SIZE);
     std::cout << "Best fitness: " << individual.fitness << std::endl;

@@ -178,7 +178,7 @@ namespace GP
             std::vector<IntMatrix>& passengerNumber = ind.ch.passengerNumber;
             for(int j = 0; j < aircraftTypes; j++)
             {
-                fleetSize.push_back(rand() % 300 + 1);
+                fleetSize.push_back(rand() % 100);
                 aircraftTypeDecisionVariable1.push_back(rand() % 2);
             }
 
@@ -194,7 +194,7 @@ namespace GP
                     for(int n = 0; n < aircraftTypes; n++)
                     {
                         flightFrequency[k][m][n] = rand() % 30;
-                        passengerNumber[k][m][n] = rand() % 100;
+                        passengerNumber[k][m][n] = rand() % 30;
                     }
                 }
 
@@ -313,7 +313,7 @@ namespace GP
 
         // Mutate fleet size
 
-        ind.ch.fleetSize[mutationPointFleet] = rand() % 300 + 1;
+        ind.ch.fleetSize[mutationPointFleet] = rand() % 100;
         // Mutate aircraft type decision variable 1
         ind.ch.aircraftTypeDecisionVariable1[mutationPointAircraftTypeBin1] = rand() % 2;
         // Mutate aircraft type decision variable 2
@@ -335,7 +335,7 @@ namespace GP
         {
             for(int j = 0; j < ind.ch.passengerNumber[mutationPointPassengerNumber][i].size(); j++)
             {
-                ind.ch.passengerNumber[mutationPointPassengerNumber][i][j] = rand() % 100;
+                ind.ch.passengerNumber[mutationPointPassengerNumber][i][j] = rand() % 30;
             }
         }
 
@@ -357,7 +357,7 @@ namespace GP
             evaluateIndividual(pop[i], instance, flightLegPrices, caskValues);
         }
 
-        std::sort(std::execution::par_unseq,pop.begin(), pop.end(), [](Individual& a, Individual& b){return a.fitness < b.fitness;});
+        std::sort(std::execution::par_unseq,pop.begin(), pop.end(), [](Individual& a, Individual& b){return a.fitness > b.fitness;});
         Individual best = pop[0];
 
         std::cout << "Best fitness: " << best.fitness << std::endl;
@@ -366,11 +366,11 @@ namespace GP
         {
             Population children = newGen(pop, instance, mr, cr);
             // worst fitness first
-            std::sort(std::execution::par_unseq,pop.begin(), pop.end(), [](Individual& a, Individual& b){return a.fitness > b.fitness;});
-            pop[0] = best;
             std::sort(std::execution::par_unseq,pop.begin(), pop.end(), [](Individual& a, Individual& b){return a.fitness < b.fitness;});
+            pop[0] = best;
+            std::sort(std::execution::par_unseq,pop.begin(), pop.end(), [](Individual& a, Individual& b){return a.fitness > b.fitness;});
 
-            if(pop[0].fitness < best.fitness)
+            if(pop[0].fitness > best.fitness)
             {
                 best = pop[0];
             }
