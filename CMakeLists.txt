@@ -15,15 +15,9 @@ set (RESULT ${PROJECT_DIR}/result)
 set (GPU_ON 1)
 set (DEBUG 1)
 configure_file(${PROJECT_DIR}/config.h.in ${PROJECT_DIR}/include/config.h)
-# add_subdirectory(src/GPU)
-# add_subdirectory(src/GPU/gpu_module)
-# add_subdirectory(util)
-
 add_executable(main "src/main.cu")
 target_sources(main PRIVATE "util/util.cpp")
-
-
-#add_executable(tree "src/tree.cpp")
+target_sources(main PRIVATE "src/gp.cpp")
 target_include_directories(main PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 set_target_properties(main PROPERTIES CUDA_ARCHITECTURES "89")
 

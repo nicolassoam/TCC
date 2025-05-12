@@ -3,7 +3,6 @@
 namespace util
 {
     namespace fs = std::filesystem;
- 
     template <typename T, typename U> 
     T transpose(T& mat) 
     {
@@ -31,13 +30,13 @@ namespace util
             v.push_back(entry.path().string());
         }
         std::sort(v.begin(), v.end(),[](String& a, const String& b) {
-            return a.length() < b.length();
+            return a < b;
         });
         return v;
 
     }
 
-    StringMatrix readFile(String path)
+    StringMatrix readFile(String path, bool _transpose)
     {
         std::ifstream file;
         String line;
@@ -71,14 +70,29 @@ namespace util
             return StringMatrix();
         }
         file.close();
-        csv = transpose<StringMatrix, StringVector>(csv);
+        if(_transpose)
+        {
+            csv = transpose<StringMatrix, StringVector>(csv);
+        }
         return csv;
+    }
+
+    std::map<String, int> flightLegPrice(StringMatrix p)
+    {
+        std::map<String, int> m;
+        
+        return m;
     }
 
     InstanceType loadInstance()
     {
         StringVector instances = readDirectory();
         InstanceType instanceMatrix;
+
+        /* AERONAVE */
+        String aeronavePath = instances[AERONAVE];
+        StringMatrix aeronave = readFile(aeronavePath, false);
+
         /* CASK */
         String caskPath = instances[CASK];
         StringMatrix cask = readFile(caskPath);
@@ -89,32 +103,19 @@ namespace util
 
         /* ROTAS */
         String rotasPath = instances[ROTAS];
-        StringMatrix rotas = readFile(rotasPath);
+        StringMatrix rotas = readFile(rotasPath, false);
 
         /* ROTAS2 */
         String rotas2Path = instances[ROTAS2];
-        StringMatrix rotas2 = readFile(rotas2Path);
-
-
+        StringMatrix rotas2 = readFile(rotas2Path, false);
+        /*for (auto j : instances)
+            std::cout << j << std::endl;*/
+        instanceMatrix.push_back(aeronave);
         instanceMatrix.push_back(cask);
         instanceMatrix.push_back(passagem);
         instanceMatrix.push_back(rotas);
         instanceMatrix.push_back(rotas2);
         return instanceMatrix;
-    }
-
-    void loadInstanceObject()
-    {
-        currentInstance = returnInstance();
-    }
-
-    InstanceType returnInstance()
-    {
-        if (currentInstance.size() == 0)
-        {
-            loadInstanceObject();
-        }
-        return currentInstance;
     }
 
 } // namespace util

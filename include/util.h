@@ -19,18 +19,17 @@ using InstanceType = std::vector<StringMatrix>;
 
 namespace util
 {
-    InstanceType currentInstance;
     InstanceType loadInstance();
     StringVector readDirectory();
-    StringMatrix readFile(String path);
-    void loadInstanceObject();
-    InstanceType returnInstance();
+    StringMatrix readFile(String path, bool _transpose = true);
+    std::map<String, int> flightLegPrice(StringMatrix p);
     template <typename T, typename U> T transpose(T& mat);
-
-    StringMatrix cask() { return currentInstance[CASK]; }
-    StringMatrix passagem() { return currentInstance[PASSAGEM]; }
-    StringMatrix rotas() { return currentInstance[ROTAS]; }
-    StringMatrix rotas2() { return currentInstance[ROTAS2]; }
+    
+    inline StringMatrix cask(InstanceType t) { return t[CASK]; }
+    inline StringMatrix passagem(InstanceType t) { return t[PASSAGEM]; }
+    inline StringMatrix rotas(InstanceType t) { return t[ROTAS]; }
+    inline StringMatrix rotas2(InstanceType t) { return t[ROTAS2]; }
+    inline StringMatrix aeronave(InstanceType t) { return t[AERONAVE]; }
 
 }
 

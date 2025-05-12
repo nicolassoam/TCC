@@ -3,10 +3,11 @@
 
 enum Sheets
 {
-    CASK = 0,
-    PASSAGEM = 1,
-    ROTAS = 2,
-    ROTAS2 = 3
+    AERONAVE, 
+    CASK,
+    PASSAGEM,
+    ROTAS,
+    ROTAS2
 };
 
 namespace Rotas
@@ -52,7 +53,27 @@ namespace CaskPassagem
     };
 }
 
+namespace AeronaveCols
+{
+    enum CollumnsAeronave
+    {
+        E190_E2,
+        E195_E2, 
+        A220_100, 
+        A220_300,
+        A319Neo,
+        B737_M7,
+        ATR_72  
+    };
+};
 
+enum Aeronave
+{
+    FROTA,
+    ASSENTOS,
+    ALCANCE,
+    PISTA
+};
 
 
 #endif
