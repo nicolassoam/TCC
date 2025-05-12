@@ -22,7 +22,7 @@ namespace util
     InstanceType loadInstance();
     StringVector readDirectory();
     StringMatrix readFile(String path, bool _transpose = true);
-    std::map<String, int> flightLegPrice(StringMatrix p);
+    std::map<String, std::vector<double>> mapODs(StringMatrix p);
     template <typename T, typename U> T transpose(T& mat);
     
     inline StringMatrix cask(InstanceType t) { return t[CASK]; }

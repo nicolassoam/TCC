@@ -11,8 +11,9 @@ int main()
     StringMatrix cask = util::cask(instances);
     StringMatrix flightData = util::rotas2(instances);
     std::vector<Flight> flights;
-
-    Individual individual = GP::search(instances,500, POPULATION_SIZE);
+    std::map<String, std::vector<double>> prices = util::mapODs(flightData);
+    std::map<String, std::vector<double>> caskValues = util::mapODs(cask);
+    Individual individual = GP::search(prices, caskValues, instances, 500, POPULATION_SIZE);
     std::cout << "Best fitness: " << individual.fitness << std::endl;
      /*for (const auto& instance : instances) {
          for (const auto& line : instance) {

@@ -81,12 +81,15 @@ namespace GP
 {
     Population initializePopulation(int populationSize, int aircraftTypes, int flightLegs, int timeWindows);
     Population newGen(Population& population, InstanceType instance,float cr, float mr);
-    void evaluateIndividual(Individual& ind, InstanceType instance);
+    void evaluateIndividual(Individual& ind, InstanceType instance, 
+                            std::map<String,std::vector<double>> flightLegPrices, std::map<String, std::vector<double>> caskValues);
     int constraintCheck(Individual& ind, InstanceType instance);
     int tournament(Population population, int k);
     void crossover(Individual& fstMate, Individual& sndMate);
     void mutate(Individual& mutated);
-    Individual search(InstanceType instance, int generations, int populationSize, float mr = 0.1, float cr = 0.9);
+    Individual search(std::map<String,std::vector<double>> flightLegPrices, std::map<String, std::vector<double>> caskValues, 
+                      InstanceType instance, int generations, 
+                      int populationSize, float mr = 0.1, float cr = 0.9);
 }
 
 #endif

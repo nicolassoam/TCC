@@ -77,10 +77,22 @@ namespace util
         return csv;
     }
 
-    std::map<String, int> flightLegPrice(StringMatrix p)
+    std::map<String, std::vector<double>> mapODs(StringMatrix p)
     {
-        std::map<String, int> m;
-        
+        std::map<String, std::vector<double>> m;
+        int rows = p.size();
+
+        for (int i = 0; i < rows; i++)
+        {
+            String flightLeg = p[i][CaskPassagem::DESTINO];
+            std::vector<double> prices;
+            for (int j = 2; j < p[i].size(); j++)
+            {
+                prices.push_back(std::stod(p[i][j]));
+            }
+            m.insert(std::pair<String, std::vector<double>>(flightLeg, prices));
+        }
+
         return m;
     }
 
@@ -95,11 +107,11 @@ namespace util
 
         /* CASK */
         String caskPath = instances[CASK];
-        StringMatrix cask = readFile(caskPath);
+        StringMatrix cask = readFile(caskPath, false);
 
         /* PASSAGEM */
         String passagemPath = instances[PASSAGEM];
-        StringMatrix passagem = readFile(passagemPath);
+        StringMatrix passagem = readFile(passagemPath, false);
 
         /* ROTAS */
         String rotasPath = instances[ROTAS];

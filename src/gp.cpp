@@ -205,10 +205,12 @@ namespace GP
         return pop;
     }
 
-    void evaluateIndividual (Individual& ind, InstanceType instance)
+    void evaluateIndividual (Individual& ind, InstanceType instance, 
+                             std::map<String,std::vector<double>> flightLegPrices, std::map<String, std::vector<double>> caskValues)
     {
         StringMatrix flights = util::rotas2(instance);
         StringMatrix aircrafts = util::aeronave(instance);
+        StringMatrix cask = util::cask(instance);
         // pick vectors from individual
         std::vector<int>& fleetSize = ind.ch.fleetSize;
         std::vector<int>& aircraftTypeDecisionVariable1 = ind.ch.aircraftTypeDecisionVariable1;
@@ -221,7 +223,28 @@ namespace GP
         if (constraint == CONSTRAINT_PEN)
         {
             ind.fitness = CONSTRAINT_PEN;
+            return;
         }
+
+        int flightLegs = flightFrequency.size();
+        int timeWindows = 4;
+        int aircraftTypes = AIRCRAFT_TYPES;
+        double sum = 0;
+        for(int l = 0; l < flightLegs; l++)
+        {
+            String destination = flights[l][Rotas2_3::CollumnsRotas2_3::DESTINO];
+            std::vector<double> prices = flightLegPrices[destination];
+            std::vector<double> cask = caskValues[destination];
+            for(int w = 0; w < timeWindows; w++)
+            {
+                for(int a = 0; a < aircraftTypes; a++)
+                {
+                    sum = prices[a] * passengerNumber[l][w][a] - (cask[a] * flightFrequency[l][w][a]);
+                }
+            }
+        }
+        ind.fitness = sum;
+        return;
     }
 
     void crossover(Individual& fstChild, Individual& sndChild)
@@ -318,7 +341,7 @@ namespace GP
 
     }
 
-    Individual search(InstanceType instance, int generations, int populationSize, float mr, float cr)
+    Individual search(std::map<String,std::vector<double>> flightLegPrices, std::map<String, std::vector<double>> caskValues, InstanceType instance, int generations, int populationSize, float mr, float cr)
     {
         Population pop;
         int aircraftTypes = util::passagem(instance).size() - 2;
@@ -331,7 +354,7 @@ namespace GP
 
         for (int i = 0; i < POPULATION_SIZE; i++)
         {
-            evaluateIndividual(pop[i], instance);
+            evaluateIndividual(pop[i], instance, flightLegPrices, caskValues);
         }
 
         std::sort(std::execution::par_unseq,pop.begin(), pop.end(), [](Individual& a, Individual& b){return a.fitness < b.fitness;});
