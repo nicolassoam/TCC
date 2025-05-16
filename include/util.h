@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <map>
+#include <set>
 #include <filesystem>
 #include "enumTypedef.h"
 #include "config.h"

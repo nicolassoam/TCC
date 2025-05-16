@@ -56,17 +56,45 @@ namespace util
     InstanceType FlightLegs(StringMatrix& dataMatrix)
     {
         InstanceType flights;
-        for(int i = 0; i < dataMatrix.size(); i++)
+        int destinationCount = 11;
+        std::set<String>doneDestinations;
+        for(int i = 0; i < destinationCount; i++)
         {
             StringMatrix flightData;
-            StringVector dataRow = dataMatrix[i];
-            String currentDestination = dataRow[Rotas2_3::DESTINO];
-            for(int j = 0; j < dataRow.size(); j++)
+            String currentDestination = " ";
+            for(int j = 0; j < dataMatrix.size(); j++)
             {
+               if(doneDestinations.find(dataMatrix[j][CaskPassagem::DESTINO]) == doneDestinations.end())
+               {
+                    currentDestination = dataMatrix[j][CaskPassagem::DESTINO];
+                    doneDestinations.insert(currentDestination);
+                }
+            }
+            for(int k = 0; k < dataMatrix.size(); k++)
+            {
+                StringVector flightLeg;
+                StringVector flightLegData = dataMatrix[k];
+                String flightLegDestination = flightLegData[CaskPassagem::DESTINO];
+                if(flightLegDestination == currentDestination)
+                {
+                    flightLeg.push_back(flightLegData[Rotas2_3::PISTA]);
+                    flightLeg.push_back(flightLegData[Rotas2_3::DEMANDA]);
+                    flightLeg.push_back(flightLegData[Rotas2_3::DISTANCIA]);
+                    flightData.push_back(flightLeg);
+                }
 
+            }
+            if(!flightData.empty())
+            {
+                flights.push_back(flightData);
+            }
+            else
+            {
+                std::cerr << "No flight data found for destination: " << currentDestination << std::endl;
             }
 
         }
+        return flights;
     }
 
     StringMatrix readFile(String path, bool _transpose)
