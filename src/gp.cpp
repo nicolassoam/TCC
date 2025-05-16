@@ -24,7 +24,6 @@ namespace GP
 
         short firstParent = 0;
         short secondParent = 0;
-        int tries = 0;
         while(children.size() < POPULATION_SIZE)
         {
             do
@@ -45,39 +44,10 @@ namespace GP
                 mutate(fstChild);
                 mutate(sndChild);
             }
-
-            int fstChildValidation = constraintCheck(fstChild, instance);
-            int sndChildValidation = constraintCheck(sndChild, instance);
-
-            if(fstChildValidation == 0)
-            {
-                children.push_back(fstChild);
-            }
-            else
-            {
-                tries++;
-                if(tries >= MAX_TRIES)
-                {
-                    children.push_back(population[firstParent]);
-                    tries = 0;
-                }
-            }
-            
-            if(sndChildValidation == 0)
-            {
-                children.push_back(sndChild);
-            }
-            else
-            {
-                tries++;
-                if(tries >= MAX_TRIES)
-                {
-                    children.push_back(population[secondParent]);
-                    tries = 0;
-                }
-            }
-
-        }
+           
+            children.push_back(fstChild);
+            children.push_back(sndChild);
+       }
         return children;
     }
 
