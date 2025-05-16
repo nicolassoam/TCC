@@ -53,6 +53,22 @@ namespace util
         return pricesPerDestinationOnAircraftType;
     }
 
+    InstanceType FlightLegs(StringMatrix& dataMatrix)
+    {
+        InstanceType flights;
+        for(int i = 0; i < dataMatrix.size(); i++)
+        {
+            StringMatrix flightData;
+            StringVector dataRow = dataMatrix[i];
+            String currentDestination = dataRow[Rotas2_3::DESTINO];
+            for(int j = 0; j < dataRow.size(); j++)
+            {
+
+            }
+
+        }
+    }
+
     StringMatrix readFile(String path, bool _transpose)
     {
         std::ifstream file;

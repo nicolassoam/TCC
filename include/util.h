@@ -32,7 +32,7 @@ namespace util
     inline StringMatrix aeronave(InstanceType t) { return t[AERONAVE]; }
     // Map a string Matrix so that from aircraft type a [] to destination b [] is the value of the price aka prices[a][b] returns a double
     StringMatrix mapDestinationToAircraftTicketPrice(StringMatrix& dataMatrix);
-
+    InstanceType FlightLegs(StringMatrix& dataMatrix);
 }
 
 
