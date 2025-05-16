@@ -30,6 +30,8 @@ namespace util
     inline StringMatrix rotas(InstanceType t) { return t[ROTAS]; }
     inline StringMatrix rotas2(InstanceType t) { return t[ROTAS2]; }
     inline StringMatrix aeronave(InstanceType t) { return t[AERONAVE]; }
+    // Map a string Matrix so that from aircraft type a [] to destination b [] is the value of the price aka prices[a][b] returns a double
+    StringMatrix mapDestinationToAircraftTicketPrice(StringMatrix& dataMatrix);
 
 }
 

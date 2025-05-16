@@ -36,6 +36,23 @@ namespace util
 
     }
 
+    StringMatrix mapDestinationToAircraftTicketPrice(StringMatrix& dataMatrix)
+    {
+        StringMatrix pricesPerDestinationOnAircraftType;
+        for(int i = 0; i < dataMatrix.size(); i++)
+        {
+            StringVector passagemRow = dataMatrix[i];
+            StringVector pricesRow;
+            for(int j = CaskPassagem::E190_E2; j < passagemRow.size(); j++)
+            {
+                String price = passagemRow[j];
+                pricesRow.push_back(price);
+            }
+            pricesPerDestinationOnAircraftType.push_back(pricesRow);
+        }
+        return pricesPerDestinationOnAircraftType;
+    }
+
     StringMatrix readFile(String path, bool _transpose)
     {
         std::ifstream file;
