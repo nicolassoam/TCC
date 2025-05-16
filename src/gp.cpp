@@ -85,6 +85,7 @@ namespace GP
     {
         StringMatrix flights = util::rotas2(instance);
         StringMatrix aircrafts = util::aeronave(instance);
+        int penalty = 0;
         // pick vectors from individual
         std::vector<int>& fleetSize = ind.ch.fleetSize;
         std::vector<int>& aircraftTypeDecisionVariable1 = ind.ch.aircraftTypeDecisionVariable1;
@@ -110,12 +111,12 @@ namespace GP
                     sum += passengerNumber[i][j][k];
                     if(passengerNumber[i][j][k] > flightFrequency[i][j][k]*maxSeatCapacity )
                     {
-                       return CONSTRAINT_PEN; 
+                       penalty += CONSTRAINT_PEN; 
                     }
 
                     if(flightFrequency[i][j][k] > fleetSize[k])
                     {
-                        return CONSTRAINT_PEN;
+                        penalty += CONSTRAINT_PEN;
                     }
                     /*if(flightFrequency[i][j][k] > aircraftTypeDecisionVariable2[i][k] * BIG_M)
                     {
@@ -124,7 +125,7 @@ namespace GP
                 }
                 if(sum > demand)
                 {
-                    return CONSTRAINT_PEN;
+                    penalty += CONSTRAINT_PEN;
                 }
             }
         }
@@ -138,7 +139,7 @@ namespace GP
 
         if(sum > MAX_ASSIGNED_TYPES)
         {
-            return CONSTRAINT_PEN;
+            penalty += CONSTRAINT_PEN;
         }
         sum = 0;
         for(int m = 0; m < flightLegs; m++)
@@ -151,16 +152,16 @@ namespace GP
                 sum += aircraftTypeDecisionVariable2[m][n];
                 if(aircraftRange < aircraftTypeDecisionVariable2[m][n] * flightDistance)
                 {
-                    return CONSTRAINT_PEN;
+                    penalty += CONSTRAINT_PEN;
                 }
             }
             if(sum > MAX_ASSIGNED_MODELS)
             {
-                return CONSTRAINT_PEN;
+                penalty += CONSTRAINT_PEN;
             }
         }
 
-        return 0;
+        return penalty;
     }
 
     Population initializePopulation(int populationSize, int aircraftTypes, int flightLegs, int timeWindows)
