@@ -36,45 +36,82 @@ namespace util
 
     }
 
-    StringMatrix mapDestinationToAircraftTicketPrice(StringMatrix& dataMatrix)
+    StringMatrix mapDestinationToAircraftTicketPrice(StringMatrix& dataMatrix, StringMatrix& flightMatrix)
     {
         StringMatrix pricesPerDestinationOnAircraftType;
-        for(int i = 0; i < dataMatrix.size(); i++)
+        std::set<String>orderOfDestinations;
+
+        int dataMatrixPassSize = dataMatrix.size();
+
+        for (int i = 0; i < flightMatrix.size(); i++)
         {
-            StringVector passagemRow = dataMatrix[i];
-            StringVector pricesRow;
-            for(int j = CaskPassagem::E190_E2; j < passagemRow.size(); j++)
+            StringVector flightLine = flightMatrix[i];
+            for (int j = 0; j < flightLine.size(); j++)
             {
-                String price = passagemRow[j];
-                pricesRow.push_back(price);
+                String destino = flightLine[Rotas2_3::DESTINO];
+                orderOfDestinations.insert(destino);
             }
-            pricesPerDestinationOnAircraftType.push_back(pricesRow);
+        }
+        orderOfDestinations.erase("SBGO");
+        while (!orderOfDestinations.empty())
+        {
+            for (int i = 0; i < dataMatrix.size(); i++)
+            {
+                StringVector passagemRow = dataMatrix[i];
+                StringVector pricesRow;
+                String destination = passagemRow[CaskPassagem::DESTINO];
+                
+                if (orderOfDestinations.find(destination) != orderOfDestinations.end())  
+                {
+                    orderOfDestinations.erase(destination);
+                    for (int j = CaskPassagem::E190_E2; j < passagemRow.size(); j++)
+                    {
+                        String price = passagemRow[j];
+                        pricesRow.push_back(price);
+                    }
+                    pricesPerDestinationOnAircraftType.push_back(pricesRow);
+                    break;
+                }
+            }
         }
         return pricesPerDestinationOnAircraftType;
     }
 
-    InstanceType FlightLegs(StringMatrix& dataMatrix)
+    InstanceType FlightLegs(StringMatrix& dataMatrixFlight, StringMatrix& dataMatrixPass)
     {
         InstanceType flights;
-        int destinationCount = 11;
-        std::set<String>doneDestinations;
-        for(int i = 0; i < destinationCount; i++)
+        int destinationCount = 0;
+        std::queue<String>orderOfDestinations;
+
+        int dataMatrixPassSize = dataMatrixPass.size();
+
+        for(int i = 0; i < dataMatrixPassSize; i++)
+        {
+            String destination = dataMatrixPass[i][CaskPassagem::DESTINO];
+
+            orderOfDestinations.push(destination);
+
+        }
+        destinationCount = orderOfDestinations.size() + 1;
+        for(int j = 0; j < destinationCount; j++)
         {
             StringMatrix flightData;
             String currentDestination = " ";
-            for(int j = 0; j < dataMatrix.size(); j++)
+            if(orderOfDestinations.empty())
             {
-               if(doneDestinations.find(dataMatrix[j][CaskPassagem::DESTINO]) == doneDestinations.end())
-               {
-                    currentDestination = dataMatrix[j][CaskPassagem::DESTINO];
-                    doneDestinations.insert(currentDestination);
-                }
+                currentDestination = "SBGO";
+            } 
+            else
+            {
+                currentDestination = orderOfDestinations.front();
+                orderOfDestinations.pop();
             }
-            for(int k = 0; k < dataMatrix.size(); k++)
+            
+            for(int k = 0; k < dataMatrixFlight.size(); k++)
             {
                 StringVector flightLeg;
-                StringVector flightLegData = dataMatrix[k];
-                String flightLegDestination = flightLegData[CaskPassagem::DESTINO];
+                StringVector flightLegData = dataMatrixFlight[k];
+                String flightLegDestination = flightLegData[Rotas2_3::DESTINO];
                 if(flightLegDestination == currentDestination)
                 {
                     flightLeg.push_back(flightLegData[Rotas2_3::PISTA]);
@@ -136,25 +173,6 @@ namespace util
             csv = transpose<StringMatrix, StringVector>(csv);
         }
         return csv;
-    }
-
-    std::map<String, std::vector<double>> mapODs(StringMatrix p)
-    {
-        std::map<String, std::vector<double>> m;
-        int rows = p.size();
-
-        for (int i = 0; i < rows; i++)
-        {
-            String flightLeg = p[i][CaskPassagem::DESTINO];
-            std::vector<double> prices;
-            for (int j = 2; j < p[i].size(); j++)
-            {
-                prices.push_back(std::stod(p[i][j]));
-            }
-            m.insert(std::pair<String, std::vector<double>>(flightLeg, prices));
-        }
-
-        return m;
     }
 
     InstanceType loadInstance()

@@ -12,22 +12,10 @@ int main()
     StringMatrix flightData = util::rotas2(instances);
     StringMatrix passagem = util::passagem(instances);
     std::vector<Flight> flights;
-    std::map<String, std::vector<double>> prices = util::mapODs(passagem);
-    std::map<String, std::vector<double>> caskValues = util::mapODs(cask);
-    Individual individual = GP::search(prices, caskValues, instances, 500, POPULATION_SIZE);
+    StringMatrix prices = util::mapDestinationToAircraftTicketPrice(passagem, flightData);
+    StringMatrix caskValues = util::mapDestinationToAircraftTicketPrice(cask, flightData);
+    InstanceType flightLegs = util::FlightLegs(flightData, passagem);
+    Individual individual = GP::search(flightLegs, caskValues, prices, instances, 500, POPULATION_SIZE);
     std::cout << "Best fitness: " << individual.fitness << std::endl;
-     /*for (const auto& instance : instances) {
-         for (const auto& line : instance) {
-             std::cout << line << std::endl;
-         }
-         std::cout << "-----------------" << std::endl;
-     }*/
-
-     /*for (const auto& line : instances[CASK])
-     {
-         std::cout << line << " ";
-     }*/
-
-    std::cout << util::rotas2(instances)[0][1] << " ";
     return 0;
 }

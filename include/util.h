@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <map>
+#include <queue>
 #include <set>
 #include <filesystem>
 #include "enumTypedef.h"
@@ -23,7 +24,6 @@ namespace util
     InstanceType loadInstance();
     StringVector readDirectory();
     StringMatrix readFile(String path, bool _transpose = true);
-    std::map<String, std::vector<double>> mapODs(StringMatrix p);
     template <typename T, typename U> T transpose(T& mat);
     
     inline StringMatrix cask(InstanceType t) { return t[CASK]; }
@@ -31,9 +31,9 @@ namespace util
     inline StringMatrix rotas(InstanceType t) { return t[ROTAS]; }
     inline StringMatrix rotas2(InstanceType t) { return t[ROTAS2]; }
     inline StringMatrix aeronave(InstanceType t) { return t[AERONAVE]; }
-    // Map a string Matrix so that from aircraft type a [] to destination b [] is the value of the price aka prices[a][b] returns a double
-    StringMatrix mapDestinationToAircraftTicketPrice(StringMatrix& dataMatrix);
-    InstanceType FlightLegs(StringMatrix& dataMatrix);
+    
+    StringMatrix mapDestinationToAircraftTicketPrice(StringMatrix& dataMatrix, StringMatrix& flightMatrix);
+    InstanceType FlightLegs(StringMatrix& dataMatrixFlight, StringMatrix& dataMatrixPass);
 }
 
 

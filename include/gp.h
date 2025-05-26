@@ -4,59 +4,43 @@
 #include <vector>
 #include "util.h"
 
-#define POPULATION_SIZE 100
-#define TOURNAMENT_SIZE 5
+#define POPULATION_SIZE 40
+#define TOURNAMENT_SIZE 3
 #define AIRCRAFT_TYPES 7
-#define CONSTRAINT_PEN -10000
+#define CONSTRAINT_PEN -1000000
 #define BIG_M 20000
 #define MAX_ASSIGNED_MODELS 300
 #define MAX_ASSIGNED_TYPES 7
-#define MAX_TRIES 2
 
 using IntMatrix = std::vector<std::vector<int>>;
 struct Flight
 {
-    String od;
-    String origin;
-    String destination;
-    int runway;
-    String timeWindow;
-    int demand;
-    double distance;
-    Flight(String od, String origin, String destination, int runway, String timeWindow, int demand, int distance)
+    int flightFrequency;
+    int passengerNumber;
+    Flight(int flightFrequency, int passengerNumber)
     {
-        this->od = od;
-        this->origin = origin;
-        this->destination = destination;
-        this->runway = runway;
-        this->timeWindow = timeWindow;
-        this->demand = demand;
-        this->distance = distance;
+        this->flightFrequency = flightFrequency;
+        this->passengerNumber = passengerNumber;
     };
     Flight () {};
     ~Flight () {};
 };
+using FlightMatrix = std::vector<std::vector<Flight>>;
 struct Chromossome
 {
-    std::vector<int> fleetSize;
-    std::vector<int> aircraftTypeDecisionVariable1;
-    IntMatrix aircraftTypeDecisionVariable2;
-    std::vector<IntMatrix> flightFrequency;
-    std::vector<IntMatrix> passengerNumber;
+    std::vector<FlightMatrix> flightData;
     
     Chromossome (int totalAircraftsTypes, int flightLegs, int timeWindows)
     {
-        this->fleetSize.reserve(totalAircraftsTypes);
-        this->aircraftTypeDecisionVariable1.reserve(totalAircraftsTypes);
-        
-        this->aircraftTypeDecisionVariable2.reserve(flightLegs);
-        this->aircraftTypeDecisionVariable2.assign(flightLegs, std::vector<int>(totalAircraftsTypes));
-
-        this->flightFrequency.reserve(flightLegs);
-        this->flightFrequency.assign(flightLegs, IntMatrix(timeWindows, std::vector<int>(totalAircraftsTypes)));
-
-        this->passengerNumber.reserve(flightLegs);
-        this->passengerNumber.assign(flightLegs, IntMatrix(timeWindows, std::vector<int>(totalAircraftsTypes)));
+        flightData.resize(flightLegs);
+        for(int i = 0; i < flightLegs; i++)
+        {
+            flightData[i].resize(timeWindows);
+            for(int j = 0; j < timeWindows; j++)
+            {
+                flightData[i][j].resize(totalAircraftsTypes, Flight(0, 0));
+            }
+        }
     };
     Chromossome () {}; 
     ~Chromossome () {};
@@ -82,12 +66,12 @@ namespace GP
     Population initializePopulation(int populationSize, int aircraftTypes, int flightLegs, int timeWindows);
     Population newGen(Population& population, InstanceType instance,float cr, float mr);
     void evaluateIndividual(Individual& ind, InstanceType instance, 
-                            std::map<String,std::vector<double>> flightLegPrices, std::map<String, std::vector<double>> caskValues);
-    int constraintCheck(Individual& ind, InstanceType instance);
+                            StringMatrix flightLegPrices, StringMatrix caskValues, InstanceType flightsMap);
+    int constraintCheck(Individual& ind, InstanceType instance, InstanceType flightsMap);
     int tournament(Population population, int k);
     void crossover(Individual& fstMate, Individual& sndMate);
     void mutate(Individual& mutated);
-    Individual search(std::map<String,std::vector<double>> flightLegPrices, std::map<String, std::vector<double>> caskValues, 
+    Individual search(InstanceType flightLegs, StringMatrix cask, StringMatrix passagem, 
                       InstanceType instance, int generations, 
                       int populationSize, float mr = 0.1, float cr = 0.9);
 }

@@ -51,47 +51,57 @@ namespace GP
         return children;
     }
 
-    int constraintCheck(Individual& ind, InstanceType instance)
+    int constraintCheck(Individual& ind, InstanceType instance, InstanceType flightsMap)
     {
         StringMatrix flights = util::rotas2(instance);
         StringMatrix aircrafts = util::aeronave(instance);
         int penalty = 0;
         // pick vectors from individual
-        std::vector<int>& fleetSize = ind.ch.fleetSize;
-        std::vector<int>& aircraftTypeDecisionVariable1 = ind.ch.aircraftTypeDecisionVariable1;
-        IntMatrix& aircraftTypeDecisionVariable2 = ind.ch.aircraftTypeDecisionVariable2;
-        std::vector<IntMatrix>& flightFrequency = ind.ch.flightFrequency;
-        std::vector<IntMatrix>& passengerNumber = ind.ch.passengerNumber;
-
+        std::vector<FlightMatrix>& flightData = ind.ch.flightData;
         //check constraints, if violated worst fitness
-        int flightLegs = flights.size();
-        int timeWindows = 4;
+        int flightLegs = 10;
+        int timeWindows = 28;
         int aircraftTypes = 7;
         int sum = 0;
         for(int i = 0; i < flightLegs; i++)
         {
-            StringVector flight = flights[i];
-            int demand = std::stoi(flight[Rotas2_3::CollumnsRotas2_3::DEMANDA]);
+            StringMatrix flight = flightsMap[i];
             for(int j = 0; j < timeWindows; j++)
             {
+                StringVector flightTime = flight[j];
+                int demand = std::stoi(flightTime[1]);
                 for(int k = 0; k < aircraftTypes; k++)
                 {
                     StringVector aircraft = aircrafts[k];
                     int maxSeatCapacity = std::stoi(aircraft[ASSENTOS]);
-                    sum += passengerNumber[i][j][k];
-                    if(passengerNumber[i][j][k] > flightFrequency[i][j][k]*maxSeatCapacity )
+                    int aircraftRange = std::stoi(aircraft[ALCANCE]);
+                    int flightDistance = std::stoi(flightTime[Rotas2_3::CollumnsRotas2_3::DISTANCIA]);
+                    sum += flightData[i][j][k].passengerNumber;
+                    if(flightData[i][j][k].passengerNumber > flightData[i][j][k].flightFrequency*maxSeatCapacity )
                     {
                        penalty += CONSTRAINT_PEN; 
                     }
 
-                    if(flightFrequency[i][j][k] > fleetSize[k])
+                    if(aircraftRange < flightDistance && flightData[i][j][k].flightFrequency > 0)
                     {
                         penalty += CONSTRAINT_PEN;
                     }
-                    /*if(flightFrequency[i][j][k] > aircraftTypeDecisionVariable2[i][k] * BIG_M)
+
+                    // if(flightData[i][j][k].flightFrequency > fleetSize[k])
+                    // {
+                    //     penalty += CONSTRAINT_PEN;
+                    // }
+
+                    if (flightData[i][j][k].flightFrequency > 0 && flightData[i][j][k].flightFrequency > BIG_M)
                     {
                         return CONSTRAINT_PEN;
-                    }*/
+                    }
+
+                    if(flightData[i][j][k].flightFrequency > 0 && flightData[i][j][k].flightFrequency > BIG_M)
+                    {
+                        return CONSTRAINT_PEN;
+                    }
+                    // fleetSize[k]++;
                 }
                 if(sum > demand)
                 {
@@ -102,34 +112,34 @@ namespace GP
 
         sum = 0;
 
-        for(int l = 0; l < aircraftTypes; l++)
-        {
-            sum+= aircraftTypeDecisionVariable1[l];
-        }
+        // for(int l = 0; l < aircraftTypes; l++)
+        // {
+        //     sum+= aircraftTypeDecisionVariable1[l];
+        // }
 
-        if(sum > MAX_ASSIGNED_TYPES)
-        {
-            penalty += CONSTRAINT_PEN;
-        }
-        sum = 0;
-        for(int m = 0; m < flightLegs; m++)
-        {
-            int flightDistance = std::stoi(flights[m][Rotas2_3::CollumnsRotas2_3::DISTANCIA]);
+        // if(sum > MAX_ASSIGNED_TYPES)
+        // {
+        //     penalty += CONSTRAINT_PEN;
+        // }
+        // sum = 0;
+        // for(int m = 0; m < flightLegs; m++)
+        // {
+        //     int flightDistance = std::stoi(flights[m][Rotas2_3::CollumnsRotas2_3::DISTANCIA]);
             
-            for(int n = 0; n < aircraftTypes; n++)
-            {
-                int aircraftRange = std::stoi(aircrafts[n][ALCANCE]);
-                sum += aircraftTypeDecisionVariable2[m][n];
-                if(aircraftRange < aircraftTypeDecisionVariable2[m][n] * flightDistance)
-                {
-                    penalty += CONSTRAINT_PEN;
-                }
-            }
-            if(sum > MAX_ASSIGNED_MODELS)
-            {
-                penalty += CONSTRAINT_PEN;
-            }
-        }
+        //     for(int n = 0; n < aircraftTypes; n++)
+        //     {
+        //         int aircraftRange = std::stoi(aircrafts[n][ALCANCE]);
+        //         sum += aircraftTypeDecisionVariable2[m][n];
+        //         if(aircraftRange < aircraftTypeDecisionVariable2[m][n] * flightDistance)
+        //         {
+        //             penalty += CONSTRAINT_PEN;
+        //         }
+        //     }
+        //     if(sum > MAX_ASSIGNED_MODELS)
+        //     {
+        //         penalty += CONSTRAINT_PEN;
+        //     }
+        // }
 
         return penalty;
     }
@@ -142,30 +152,24 @@ namespace GP
         {
             Individual ind = Individual(aircraftTypes, flightLegs, timeWindows);
 
-            std::vector<int>& fleetSize = ind.ch.fleetSize;
-            std::vector<int>& aircraftTypeDecisionVariable1 = ind.ch.aircraftTypeDecisionVariable1;
-            IntMatrix& aircraftTypeDecisionVariable2 = ind.ch.aircraftTypeDecisionVariable2;
-            std::vector<IntMatrix>& flightFrequency = ind.ch.flightFrequency;
-            std::vector<IntMatrix>& passengerNumber = ind.ch.passengerNumber;
-            for(int j = 0; j < aircraftTypes; j++)
-            {
-                fleetSize.push_back(rand() % 100);
-                aircraftTypeDecisionVariable1.push_back(rand() % 2);
-            }
+            std::vector<FlightMatrix>& flightData = ind.ch.flightData;
 
             for(int k = 0; k < flightLegs; k++)
             {
-                for(int l = 0; l < aircraftTypes; l++)
-                {
-                    aircraftTypeDecisionVariable2[k][l] = rand() % 2;
-                }
 
                 for(int m = 0; m < timeWindows; m++)
                 {
                     for(int n = 0; n < aircraftTypes; n++)
                     {
-                        flightFrequency[k][m][n] = rand() % 30;
-                        passengerNumber[k][m][n] = rand() % 30;
+                        flightData[k][m][n].passengerNumber = rand() % 30;
+                        if(m > 0)
+                        {
+                            flightData[k][m][n].flightFrequency = flightData[k][m-1][n].flightFrequency;
+                        }
+                        else
+                        {
+                            flightData[k][m][n].flightFrequency = rand() % 30;
+                        }
                     }
                 }
 
@@ -177,40 +181,35 @@ namespace GP
     }
 
     void evaluateIndividual (Individual& ind, InstanceType instance, 
-                             std::map<String,std::vector<double>> flightLegPrices, std::map<String, std::vector<double>> caskValues)
+                             StringMatrix flightLegPrices, StringMatrix caskValues, InstanceType flightsMap)
     {
         StringMatrix flights = util::rotas2(instance);
         StringMatrix aircrafts = util::aeronave(instance);
         StringMatrix cask = util::cask(instance);
         // pick vectors from individual
-        std::vector<int>& fleetSize = ind.ch.fleetSize;
-        std::vector<int>& aircraftTypeDecisionVariable1 = ind.ch.aircraftTypeDecisionVariable1;
-        IntMatrix& aircraftTypeDecisionVariable2 = ind.ch.aircraftTypeDecisionVariable2;
-        std::vector<IntMatrix>& flightFrequency = ind.ch.flightFrequency;
-        std::vector<IntMatrix>& passengerNumber = ind.ch.passengerNumber;
+        std::vector<FlightMatrix>& flightData = ind.ch.flightData;
 
         // Constraint check
-        int constraint = constraintCheck(ind, instance);
-        if (constraint == CONSTRAINT_PEN)
-        {
-            ind.fitness = CONSTRAINT_PEN;
-            return;
-        }
+        int constraint = constraintCheck(ind, instance, flightsMap);
+        
+        ind.fitness += constraint;
+        
 
-        int flightLegs = flightFrequency.size();
-        int timeWindows = 4;
+        int flightLegs = 10;
+        int timeWindows = 28;
         int aircraftTypes = AIRCRAFT_TYPES;
         double sum = 0;
         for(int l = 0; l < flightLegs; l++)
         {
-            String destination = flights[l][Rotas2_3::CollumnsRotas2_3::DESTINO];
-            std::vector<double> prices = flightLegPrices[destination];
-            std::vector<double> cask = caskValues[destination];
+            std::vector<String> prices = flightLegPrices[l];
+            std::vector<String> cask = caskValues[l];
             for(int w = 0; w < timeWindows; w++)
             {
                 for(int a = 0; a < aircraftTypes; a++)
                 {
-                    sum = prices[a] * passengerNumber[l][w][a] - (cask[a] * flightFrequency[l][w][a]);
+                    double price = std::stod(prices[a]);
+                    double caskValue = std::stod(cask[a]);
+                    sum += price * flightData[l][w][a].passengerNumber - (caskValue * flightData[l][w][a].flightFrequency);
                 }
             }
         }
@@ -221,53 +220,19 @@ namespace GP
     void crossover(Individual& fstChild, Individual& sndChild)
     {
         //Single point crossover
-        int crossoverPointFleet = rand() % fstChild.ch.fleetSize.size();
-        int crossoverPointAircraftTypeBin1 = rand() % fstChild.ch.aircraftTypeDecisionVariable1.size();
-        int crossoverPointAircraftTypeBin2 = rand() % fstChild.ch.aircraftTypeDecisionVariable2.size();
-        int crossoverPointFlightFrequency = rand() % fstChild.ch.flightFrequency.size();
-        int crossoverPointPassengerNumber = rand() % fstChild.ch.passengerNumber.size();
+        
+        int crossoverPointFlight = rand() % fstChild.ch.flightData.size();
 
-        for(int i = crossoverPointFleet; i < fstChild.ch.fleetSize.size(); i++)
-        {
-            std::swap(fstChild.ch.fleetSize[i], sndChild.ch.fleetSize[i]);
-        }
 
-        for(int j = crossoverPointAircraftTypeBin1; j < fstChild.ch.aircraftTypeDecisionVariable1.size(); j++)
+        for(int m = crossoverPointFlight; m < fstChild.ch.flightData.size(); m++)
         {
-            std::swap(fstChild.ch.aircraftTypeDecisionVariable1[j], sndChild.ch.aircraftTypeDecisionVariable1[j]);
-        }
-
-        for(int k = crossoverPointAircraftTypeBin2; k < fstChild.ch.aircraftTypeDecisionVariable2.size(); k++)
-        {
-            int secondPoint = rand() % fstChild.ch.aircraftTypeDecisionVariable2[k].size();
-            for(int l = secondPoint; l < fstChild.ch.aircraftTypeDecisionVariable2[k].size(); l++)
+            int secondPoint = rand() % fstChild.ch.flightData[m].size();
+            for(int n = secondPoint; n < fstChild.ch.flightData[m].size(); n++)
             {
-                std::swap(fstChild.ch.aircraftTypeDecisionVariable2[k][l], sndChild.ch.aircraftTypeDecisionVariable2[k][l]);
-            }
-        }
-
-        for(int m = crossoverPointFlightFrequency; m < fstChild.ch.flightFrequency.size(); m++)
-        {
-            int secondPoint = rand() % fstChild.ch.flightFrequency[m].size();
-            for(int n = secondPoint; n < fstChild.ch.flightFrequency[m].size(); n++)
-            {
-                int thirdPoint = rand() % fstChild.ch.flightFrequency[m][n].size();
-                for (int o = thirdPoint; o < fstChild.ch.flightFrequency[m][n].size(); o++)
+                int thirdPoint = rand() % fstChild.ch.flightData[m][n].size();
+                for (int o = thirdPoint; o < fstChild.ch.flightData[m][n].size(); o++)
                 {
-                    std::swap(fstChild.ch.flightFrequency[m][n][o], sndChild.ch.flightFrequency[m][n][o]);
-                }
-            }
-        }
-
-        for(int p = crossoverPointPassengerNumber; p < fstChild.ch.passengerNumber.size(); p++)
-        {
-            int secondPoint = rand() % fstChild.ch.passengerNumber[p].size();
-            for(int q = secondPoint; q < fstChild.ch.passengerNumber[p].size(); q++)
-            {
-                int thirdPoint = rand() % fstChild.ch.passengerNumber[p][q].size();
-                for (int r = thirdPoint; r < fstChild.ch.passengerNumber[p][q].size(); r++)
-                {
-                    std::swap(fstChild.ch.passengerNumber[p][q][r], sndChild.ch.passengerNumber[p][q][r]);
+                    std::swap(fstChild.ch.flightData[m][n][o], sndChild.ch.flightData[m][n][o]);
                 }
             }
         }
@@ -276,56 +241,46 @@ namespace GP
     void mutate(Individual& ind)
     {
         // Mutate all variables
-        int mutationPointFleet = rand() % ind.ch.fleetSize.size();
-        int mutationPointAircraftTypeBin1 = rand() % ind.ch.aircraftTypeDecisionVariable1.size();
-        int mutationPointAircraftTypeBin2 = rand() % ind.ch.aircraftTypeDecisionVariable2.size();
-        int mutationPointFlightFrequency = rand() % ind.ch.flightFrequency.size();
-        int mutationPointPassengerNumber = rand() % ind.ch.passengerNumber.size();
+        int mutationPointFlight = rand() % ind.ch.flightData.size();
 
         // Mutate fleet size
-
-        ind.ch.fleetSize[mutationPointFleet] = rand() % 100;
-        // Mutate aircraft type decision variable 1
-        ind.ch.aircraftTypeDecisionVariable1[mutationPointAircraftTypeBin1] = rand() % 2;
-        // Mutate aircraft type decision variable 2
-        for(int i = 0; i < ind.ch.aircraftTypeDecisionVariable2[mutationPointAircraftTypeBin2].size(); i++)
-        {
-            ind.ch.aircraftTypeDecisionVariable2[mutationPointAircraftTypeBin2][i] = rand() % 2;
-        }
+    
         // Mutate flight frequency
-        for(int i = 0; i < ind.ch.flightFrequency[mutationPointFlightFrequency].size(); i++)
+        for(int i = 0; i < ind.ch.flightData[mutationPointFlight].size(); i++)
         {
-            for(int j = 0; j < ind.ch.flightFrequency[mutationPointFlightFrequency][i].size(); j++)
+            for(int j = 0; j < ind.ch.flightData[mutationPointFlight][i].size(); j++)
             {
-                ind.ch.flightFrequency[mutationPointFlightFrequency][i][j] = rand() % 30;
+                if(j > 0)
+                {
+                    ind.ch.flightData[mutationPointFlight][i][j] = ind.ch.flightData[mutationPointFlight][i][j-1];
+                }
+                else
+                {
+                    ind.ch.flightData[mutationPointFlight][i][j].flightFrequency = rand() % 30;
+                }
+
+                ind.ch.flightData[mutationPointFlight][i][j].passengerNumber = rand() % 30;
+
             }
         }
 
-        // Mutate passenger number
-        for(int i = 0; i < ind.ch.passengerNumber[mutationPointPassengerNumber].size(); i++)
-        {
-            for(int j = 0; j < ind.ch.passengerNumber[mutationPointPassengerNumber][i].size(); j++)
-            {
-                ind.ch.passengerNumber[mutationPointPassengerNumber][i][j] = rand() % 30;
-            }
-        }
 
     }
 
-    Individual search(std::map<String,std::vector<double>> flightLegPrices, std::map<String, std::vector<double>> caskValues, InstanceType instance, int generations, int populationSize, float mr, float cr)
+    Individual search(InstanceType flightLegs, StringMatrix cask, StringMatrix passagem, InstanceType instance, int generations, int populationSize, float mr, float cr)
     {
         Population pop;
         int aircraftTypes = util::passagem(instance).size() - 2;
         // 150 counting the return flight
-        int flightLegs = 150;
+        int flightLegsSize = 10;
         // Four daily shifts, as per article
-        int timeWindows = 4;
-        
-        pop = initializePopulation(populationSize, aircraftTypes, flightLegs, timeWindows);
+        int timeWindows = 28;
+
+        pop = initializePopulation(populationSize, aircraftTypes, flightLegsSize, timeWindows);
 
         for (int i = 0; i < POPULATION_SIZE; i++)
         {
-            evaluateIndividual(pop[i], instance, flightLegPrices, caskValues);
+            evaluateIndividual(pop[i], instance, passagem, cask, flightLegs);
         }
 
         std::sort(std::execution::par_unseq,pop.begin(), pop.end(), [](Individual& a, Individual& b){return a.fitness > b.fitness;});

@@ -19,7 +19,7 @@ def read_instance(file_path: str) -> pd.DataFrame:
     df['PASSAGEM'] = df['PASSAGEM'].append(df['PASSAGEM2'].iloc[1:], ignore_index=True)
     df.pop('PASSAGEM2')
     
-    df['ROTAS2'] = df['ROTAS2'].append(df['ROTAS3'].iloc[1:], ignore_index=True)
+    # df['ROTAS2'] = df['ROTAS2'].append(df['ROTAS3'].iloc[1:], ignore_index=True)
     df.pop('ROTAS3')
 
     df['CASK'] = df['CASK'].append(df['CASK2'].iloc[1:], ignore_index=True)
