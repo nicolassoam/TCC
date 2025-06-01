@@ -3,19 +3,20 @@
 namespace util
 {
     namespace fs = std::filesystem;
-    template <typename T, typename U> 
-    T transpose(T& mat) 
+    template <typename T, typename U>
+    T transpose(T &mat)
     {
-        int rows = mat.size();
         int cols = mat[0].size();
+        int rows = mat.size();
         T res;
-        
 
         res.resize(cols, U(rows));
 
         // Fill res with transposed values of mat
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
+        for (int i = 0; i < rows; i++)
+        {
+            for (int j = 0; j < cols; j++)
+            {
                 res[j][i] = mat[i][j];
             }
         }
@@ -26,20 +27,19 @@ namespace util
     {
 
         StringVector v;
-        for (const auto & entry : fs::directory_iterator(PROCESSED)){
+        for (const auto &entry : fs::directory_iterator(PROCESSED))
+        {
             v.push_back(entry.path().string());
         }
-        std::sort(v.begin(), v.end(),[](String& a, const String& b) {
-            return a < b;
-        });
+        std::sort(v.begin(), v.end(), [](String &a, const String &b)
+                  { return a < b; });
         return v;
-
     }
 
-    StringMatrix mapDestinationToAircraftTicketPrice(StringMatrix& dataMatrix, StringMatrix& flightMatrix)
+    StringMatrix mapDestinationToAircraftTicketPrice(StringMatrix &dataMatrix, StringMatrix &flightMatrix)
     {
         StringMatrix pricesPerDestinationOnAircraftType;
-        std::set<String>orderOfDestinations;
+        std::set<String> orderOfDestinations;
 
         int dataMatrixPassSize = dataMatrix.size();
 
@@ -60,8 +60,8 @@ namespace util
                 StringVector passagemRow = dataMatrix[i];
                 StringVector pricesRow;
                 String destination = passagemRow[CaskPassagem::DESTINO];
-                
-                if (orderOfDestinations.find(destination) != orderOfDestinations.end())  
+
+                if (orderOfDestinations.find(destination) != orderOfDestinations.end())
                 {
                     orderOfDestinations.erase(destination);
                     for (int j = CaskPassagem::E190_E2; j < passagemRow.size(); j++)
@@ -77,57 +77,58 @@ namespace util
         return pricesPerDestinationOnAircraftType;
     }
 
-    InstanceType FlightLegs(StringMatrix& dataMatrixFlight, StringMatrix& dataMatrixPass)
+    InstanceType FlightLegs(StringMatrix &dataMatrixFlight, StringMatrix &dataMatrixPass)
     {
         InstanceType flights;
         int destinationCount = 0;
-        std::queue<String>orderOfDestinations;
+        std::set<String> orderOfDestinations;
 
         int dataMatrixPassSize = dataMatrixPass.size();
 
-        for(int i = 0; i < dataMatrixPassSize; i++)
+        for (int i = 0; i < dataMatrixPassSize; i++)
         {
             String destination = dataMatrixPass[i][CaskPassagem::DESTINO];
-
-            orderOfDestinations.push(destination);
-
+            if (destination == "SBGO")
+            {
+                continue; 
+            }
+            orderOfDestinations.insert(destination);
         }
-        destinationCount = orderOfDestinations.size() + 1;
-        for(int j = 0; j < destinationCount; j++)
+        
+        destinationCount = orderOfDestinations.size();
+        std::set<String>::iterator currentPointer = orderOfDestinations.begin();
+        while (!orderOfDestinations.empty())
         {
             StringMatrix flightData;
-            String currentDestination = " ";
-            if(orderOfDestinations.empty())
-            {
-                currentDestination = "SBGO";
-            } 
-            else
-            {
-                currentDestination = orderOfDestinations.front();
-                orderOfDestinations.pop();
-            }
-            
-            for(int k = 0; k < dataMatrixFlight.size(); k++)
+            String currentDestination = *currentPointer;
+            currentPointer++;
+            orderOfDestinations.erase(currentDestination);
+
+            for (int k = 0; k < dataMatrixFlight.size(); k++)
             {
                 StringVector flightLeg;
                 StringVector flightLegData = dataMatrixFlight[k];
-                String flightLegDestination = flightLegData[Rotas2_3::DESTINO];
-                if(flightLegDestination == currentDestination)
+                String flightLegDestination = " ";
+                
+                flightLegDestination = flightLegData[Rotas2_3::DESTINO];
+                if (flightLegDestination == "SBGO")
+                {
+                    continue; 
+                }
+                
+                if (currentDestination == flightLegDestination)
                 {
                     flightLeg.push_back(flightLegData[Rotas2_3::PISTA]);
                     flightLeg.push_back(flightLegData[Rotas2_3::DEMANDA]);
                     flightLeg.push_back(flightLegData[Rotas2_3::DISTANCIA]);
                     flightData.push_back(flightLeg);
+                    
                 }
-
             }
-            if(!flightData.empty())
+            
+            if (!flightData.empty())
             {
                 flights.push_back(flightData);
-            }
-            else
-            {
-                std::cerr << "No flight data found for destination: " << currentDestination << std::endl;
             }
 
         }
@@ -150,7 +151,7 @@ namespace util
             getline(file, line); // header
             std::stringstream ss(line);
             String value;
-            while(getline(file,line))
+            while (getline(file, line))
             {
                 std::stringstream ss(line);
                 String value;
@@ -161,14 +162,14 @@ namespace util
                 }
                 csv.push_back(csvLine);
             }
-        } 
-        catch (const std::exception& e)
+        }
+        catch (const std::exception &e)
         {
             std::cerr << "Exception: " << e.what() << std::endl;
             return StringMatrix();
         }
         file.close();
-        if(_transpose)
+        if (_transpose)
         {
             csv = transpose<StringMatrix, StringVector>(csv);
         }

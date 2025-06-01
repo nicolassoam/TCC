@@ -34,7 +34,7 @@ namespace GP
 
             Individual fstChild = population[firstParent];
             Individual sndChild = population[secondParent];
-            
+
             if(rand()%100 < cr * 100)
             {
                 crossover(fstChild, sndChild);
@@ -44,7 +44,7 @@ namespace GP
                 mutate(fstChild);
                 mutate(sndChild);
             }
-           
+
             children.push_back(fstChild);
             children.push_back(sndChild);
        }
@@ -59,7 +59,7 @@ namespace GP
         // pick vectors from individual
         std::vector<FlightMatrix>& flightData = ind.ch.flightData;
         //check constraints, if violated worst fitness
-        int flightLegs = 10;
+        int flightLegs = 20;
         int timeWindows = 28;
         int aircraftTypes = 7;
         int sum = 0;
@@ -77,9 +77,10 @@ namespace GP
                     int aircraftRange = std::stoi(aircraft[ALCANCE]);
                     int flightDistance = std::stoi(flightTime[Rotas2_3::CollumnsRotas2_3::DISTANCIA]);
                     sum += flightData[i][j][k].passengerNumber;
+                    
                     if(flightData[i][j][k].passengerNumber > flightData[i][j][k].flightFrequency*maxSeatCapacity )
                     {
-                       penalty += CONSTRAINT_PEN; 
+                       penalty += CONSTRAINT_PEN;
                     }
 
                     if(aircraftRange < flightDistance && flightData[i][j][k].flightFrequency > 0)
@@ -125,7 +126,7 @@ namespace GP
         // for(int m = 0; m < flightLegs; m++)
         // {
         //     int flightDistance = std::stoi(flights[m][Rotas2_3::CollumnsRotas2_3::DISTANCIA]);
-            
+
         //     for(int n = 0; n < aircraftTypes; n++)
         //     {
         //         int aircraftRange = std::stoi(aircrafts[n][ALCANCE]);
@@ -147,13 +148,13 @@ namespace GP
     Population initializePopulation(int populationSize, int aircraftTypes, int flightLegs, int timeWindows)
     {
         Population pop;
-    
+
         for(int i = 0; i < populationSize; i++)
         {
             Individual ind = Individual(aircraftTypes, flightLegs, timeWindows);
 
             std::vector<FlightMatrix>& flightData = ind.ch.flightData;
-
+            flightData.resize(flightLegs);
             for(int k = 0; k < flightLegs; k++)
             {
 
@@ -162,9 +163,10 @@ namespace GP
                     for(int n = 0; n < aircraftTypes; n++)
                     {
                         flightData[k][m][n].passengerNumber = rand() % 30;
+                
                         if(m > 0)
                         {
-                            flightData[k][m][n].flightFrequency = flightData[k][m-1][n].flightFrequency;
+                            flightData[k][m][n].flightFrequency = flightData[k + 10][m-1][n].flightFrequency;
                         }
                         else
                         {
@@ -180,7 +182,7 @@ namespace GP
         return pop;
     }
 
-    void evaluateIndividual (Individual& ind, InstanceType instance, 
+    void evaluateIndividual (Individual& ind, InstanceType instance,
                              StringMatrix flightLegPrices, StringMatrix caskValues, InstanceType flightsMap)
     {
         StringMatrix flights = util::rotas2(instance);
@@ -191,11 +193,11 @@ namespace GP
 
         // Constraint check
         int constraint = constraintCheck(ind, instance, flightsMap);
-        
-        ind.fitness += constraint;
-        
 
-        int flightLegs = 10;
+        ind.fitness += constraint;
+
+
+        int flightLegs = 20;
         int timeWindows = 28;
         int aircraftTypes = AIRCRAFT_TYPES;
         double sum = 0;
@@ -220,7 +222,7 @@ namespace GP
     void crossover(Individual& fstChild, Individual& sndChild)
     {
         //Single point crossover
-        
+
         int crossoverPointFlight = rand() % fstChild.ch.flightData.size();
 
 
@@ -240,11 +242,7 @@ namespace GP
 
     void mutate(Individual& ind)
     {
-        // Mutate all variables
         int mutationPointFlight = rand() % ind.ch.flightData.size();
-
-        // Mutate fleet size
-    
         // Mutate flight frequency
         for(int i = 0; i < ind.ch.flightData[mutationPointFlight].size(); i++)
         {
@@ -252,7 +250,7 @@ namespace GP
             {
                 if(j > 0)
                 {
-                    ind.ch.flightData[mutationPointFlight][i][j] = ind.ch.flightData[mutationPointFlight][i][j-1];
+                    ind.ch.flightData[mutationPointFlight][i][j] = ind.ch.flightData[mutationPointFlight+10][i][j-1];
                 }
                 else
                 {

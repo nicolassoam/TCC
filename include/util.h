@@ -10,6 +10,7 @@
 #include <map>
 #include <queue>
 #include <set>
+#include <unordered_set>
 #include <filesystem>
 #include "enumTypedef.h"
 #include "config.h"
