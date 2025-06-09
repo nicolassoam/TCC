@@ -13,35 +13,33 @@
 #define MAX_ASSIGNED_TYPES 7
 
 using IntMatrix = std::vector<std::vector<int>>;
-
-using PassengerMatrix = std::vector<std::vector<int>>;
-struct Aircraft
+struct Flight
 {
-    int index = 0;
-    int count = 0;
-    PassengerMatrix passengerPerFlight;
-    Aircraft(int index, int flightLegs, int timeWindows)
+    int flightFrequency;
+    int passengerNumber;
+    Flight(int flightFrequency, int passengerNumber)
     {
-        this->index = index;
-        passengerPerFlight.resize(flightLegs);
-        for(int i = 0; i < flightLegs; i++)
-        {
-            passengerPerFlight[i].resize(timeWindows, 0);
-        }
+        this->flightFrequency = flightFrequency;
+        this->passengerNumber = passengerNumber;
     };
+    Flight () {};
+    ~Flight () {};
 };
-
-
+using FlightMatrix = std::vector<std::vector<Flight>>;
 struct Chromossome
 {
-    std::vector<Aircraft> aircraft;
+    std::vector<FlightMatrix> flightData;
     
     Chromossome (int totalAircraftsTypes, int flightLegs, int timeWindows)
     {
-        aircraft.resize(totalAircraftsTypes);
-        for(int i = 0; i < totalAircraftsTypes; i++)
+        flightData.resize(flightLegs);
+        for(int i = 0; i < flightLegs; i++)
         {
-            aircraft[i] = Aircraft(i, flightLegs, timeWindows);
+            flightData[i].resize(timeWindows);
+            for(int j = 0; j < timeWindows; j++)
+            {
+                flightData[i][j].resize(totalAircraftsTypes, Flight(0, 0));
+            }
         }
     };
     Chromossome () {}; 

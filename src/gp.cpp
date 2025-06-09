@@ -57,70 +57,54 @@ namespace GP
         StringMatrix aircrafts = util::aeronave(instance);
         int penalty = 0;
         // pick vectors from individual
-        std::vector<FlightMatrix>& flightData = ind.ch.flightData;
+        
         //check constraints, if violated worst fitness
         int flightLegs = 20;
         int timeWindows = 28;
         int aircraftTypes = 7;
         int sum = 0;
-        for(int i = 0; i < flightLegs; i++)
+        for(int a = 0; a < aircraftTypes; a++)
         {
-            StringMatrix flight;
-            if (i < 10)
+            PassengerMatrix& flightData = ind.ch.aircraft[a].passengerPerFlight;
+            StringVector aircraft = aircrafts[a];
+            int maxSeatCapacity = std::stoi(aircraft[ASSENTOS]);
+            int aircraftRange = std::stoi(aircraft[ALCANCE]);
+            for(int l = 0; l < flightLegs; l++)
             {
-                flight = flightsMap[i];
-            }
-            else
-            {
-                flight = flightsMap[i - 10];
-            }
-            for(int j = 0; j < timeWindows; j++)
-            {
-                StringVector flightTime = flight[j];
-                int demand = std::stoi(flightTime[1]);
-                for(int k = 0; k < aircraftTypes; k++)
+                StringMatrix flight;
+                if (l < 10)
                 {
-                    StringVector aircraft = aircrafts[k];
-                    int maxSeatCapacity = std::stoi(aircraft[ASSENTOS]);
-                    int aircraftRange = std::stoi(aircraft[ALCANCE]);
-                    double flightDistance = std::stod(flightTime[2]);
-                    sum += flightData[i][j][k].passengerNumber;
-
-                    if(flightData[i][j][k].passengerNumber > flightData[i][j][k].flightFrequency*maxSeatCapacity )
-                    {
+                    flight = flightsMap[l];
+                }
+                else
+                {
+                    flight = flightsMap[l - 10];
+                }
+                for(int w = 0; w < timeWindows; w++)
+                {
+                   StringVector flightTime = flight[w];
+                   int demand = std::stoi(flightTime[1]);
+                   double flightDistance = std::stod(flightTime[2]);
+                   
+                   if(flightData[l][w] > demand)
+                   {
                        penalty += CONSTRAINT_PEN;
-                    }
+                   }
 
-                    if(aircraftRange < flightDistance && flightData[i][j][k].flightFrequency > 0)
-                    {
-                        penalty += CONSTRAINT_PEN;
-                    }
+                   if(flightData[l][w] > maxSeatCapacity)
+                   {
+                       penalty += CONSTRAINT_PEN;
+                   }
+                   
+                   if(aircraftRange < flightDistance && ind.ch.aircraft[a].count > 0)
+                   {
+                       penalty += CONSTRAINT_PEN;
+                   }
 
-                    // if(flightData[i][j][k].flightFrequency > fleetSize[k])
-                    // {
-                    //     penalty += CONSTRAINT_PEN;
-                    // }
-
-                    if (flightData[i][j][k].flightFrequency > 0 && flightData[i][j][k].flightFrequency > BIG_M)
-                    {
-                        penalty += CONSTRAINT_PEN;
-                    }
-
-                    if(flightData[i][j][k].flightFrequency == 0 && flightData[i][j][k].passengerNumber > 0)
-                    {
-                        penalty += CONSTRAINT_PEN * 100;
-                    }
-
-                    // fleetSize[k]++;
-                }
-                if(sum > demand)
-                {
-                    penalty += CONSTRAINT_PEN;
                 }
             }
-        }
 
-        sum = 0;
+        }
 
         // for(int l = 0; l < aircraftTypes; l++)
         // {
@@ -162,25 +146,15 @@ namespace GP
         {
             Individual ind = Individual(aircraftTypes, flightLegs, timeWindows);
 
-            std::vector<FlightMatrix>& flightData = ind.ch.flightData;
-            flightData.resize(flightLegs);
-            for(int k = 0; k < flightLegs; k++)
+            for(int j = 0; j < aircraftTypes; j++)
             {
-
-                for(int m = 0; m < timeWindows; m++)
+                PassengerMatrix& flightData = ind.ch.aircraft[j].passengerPerFlight;
+                flightData.resize(flightLegs);
+                for(int k = 0; k < flightLegs; k++)
                 {
-                    for(int n = 0; n < aircraftTypes; n++)
+                    for(int l = 0; l < timeWindows; l++)
                     {
-                        flightData[k][m][n].passengerNumber = rand() % 150;
-                
-                        if(m < 27 && k>= 10)
-                        {
-                            flightData[k][m][n].flightFrequency = flightData[k - 10][m+1][n].flightFrequency;
-                        }
-                        else
-                        {
-                            flightData[k][m][n].flightFrequency = (rand() % 50) + 1;
-                        }
+                        flightData[k][l] = rand() % 150;
                     }
                 }
 
@@ -207,6 +181,33 @@ namespace GP
         int timeWindows = 28;
         int aircraftTypes = AIRCRAFT_TYPES;
         double sum = 0;
+
+        for(int a = 0; a < aircraftTypes; a++)
+        {
+            PassengerMatrix& flightDataAircraft = flightData[a].passengerPerFlight;
+            for(int l = 0; l < flightLegs; l++)
+            {
+                StringMatrix flight;
+                if (l < 10)
+                {
+                    flight = flightsMap[l];
+                }
+                else
+                {
+                    flight = flightsMap[l - 10];
+                }
+                for(int w = 0; w < timeWindows; w++)
+                {
+                    StringVector flightTime = flight[w];
+                    int demand = std::stoi(flightTime[1]);
+                    int passengerNumber = flightDataAircraft[l][w];
+                    
+                    double price = std::stod(flightLegPrices[l][a]);
+                    sum += price * passengerNumber;
+                }
+            }
+        }
+
         for(int l = 0; l < flightLegs; l++)
         {
             std::vector<String> prices;
