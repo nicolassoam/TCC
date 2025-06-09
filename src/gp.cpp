@@ -51,7 +51,7 @@ namespace GP
         return children;
     }
 
-    int constraintCheck(Individual& ind, InstanceType instance, InstanceType flightsMap)
+    long constraintCheck(Individual& ind, InstanceType instance, InstanceType flightsMap)
     {
         StringMatrix flights = util::rotas2(instance);
         StringMatrix aircrafts = util::aeronave(instance);
@@ -65,7 +65,15 @@ namespace GP
         int sum = 0;
         for(int i = 0; i < flightLegs; i++)
         {
-            StringMatrix flight = flightsMap[i];
+            StringMatrix flight;
+            if (i < 10)
+            {
+                flight = flightsMap[i];
+            }
+            else
+            {
+                flight = flightsMap[i - 10];
+            }
             for(int j = 0; j < timeWindows; j++)
             {
                 StringVector flightTime = flight[j];
@@ -75,9 +83,9 @@ namespace GP
                     StringVector aircraft = aircrafts[k];
                     int maxSeatCapacity = std::stoi(aircraft[ASSENTOS]);
                     int aircraftRange = std::stoi(aircraft[ALCANCE]);
-                    int flightDistance = std::stoi(flightTime[Rotas2_3::CollumnsRotas2_3::DISTANCIA]);
+                    double flightDistance = std::stod(flightTime[2]);
                     sum += flightData[i][j][k].passengerNumber;
-                    
+
                     if(flightData[i][j][k].passengerNumber > flightData[i][j][k].flightFrequency*maxSeatCapacity )
                     {
                        penalty += CONSTRAINT_PEN;
@@ -95,13 +103,14 @@ namespace GP
 
                     if (flightData[i][j][k].flightFrequency > 0 && flightData[i][j][k].flightFrequency > BIG_M)
                     {
-                        return CONSTRAINT_PEN;
+                        penalty += CONSTRAINT_PEN;
                     }
 
-                    if(flightData[i][j][k].flightFrequency > 0 && flightData[i][j][k].flightFrequency > BIG_M)
+                    if(flightData[i][j][k].flightFrequency == 0 && flightData[i][j][k].passengerNumber > 0)
                     {
-                        return CONSTRAINT_PEN;
+                        penalty += CONSTRAINT_PEN * 100;
                     }
+
                     // fleetSize[k]++;
                 }
                 if(sum > demand)
@@ -162,15 +171,15 @@ namespace GP
                 {
                     for(int n = 0; n < aircraftTypes; n++)
                     {
-                        flightData[k][m][n].passengerNumber = rand() % 30;
+                        flightData[k][m][n].passengerNumber = rand() % 150;
                 
-                        if(m > 0)
+                        if(m < 27 && k>= 10)
                         {
-                            flightData[k][m][n].flightFrequency = flightData[k + 10][m-1][n].flightFrequency;
+                            flightData[k][m][n].flightFrequency = flightData[k - 10][m+1][n].flightFrequency;
                         }
                         else
                         {
-                            flightData[k][m][n].flightFrequency = rand() % 30;
+                            flightData[k][m][n].flightFrequency = (rand() % 50) + 1;
                         }
                     }
                 }
@@ -192,10 +201,7 @@ namespace GP
         std::vector<FlightMatrix>& flightData = ind.ch.flightData;
 
         // Constraint check
-        int constraint = constraintCheck(ind, instance, flightsMap);
-
-        ind.fitness += constraint;
-
+        long constraint = constraintCheck(ind, instance, flightsMap);
 
         int flightLegs = 20;
         int timeWindows = 28;
@@ -203,19 +209,43 @@ namespace GP
         double sum = 0;
         for(int l = 0; l < flightLegs; l++)
         {
-            std::vector<String> prices = flightLegPrices[l];
-            std::vector<String> cask = caskValues[l];
+            std::vector<String> prices;
+            std::vector<String> cask;
+            StringMatrix flight;
+
+            if (l < 10)
+            {
+                prices = flightLegPrices[l];
+                cask = caskValues[l];
+                flight = flightsMap[l];
+            }
+            else
+            {
+                prices = flightLegPrices[l-10];
+                cask = caskValues[l-10];
+                flight = flightsMap[l - 10];
+            }
+
             for(int w = 0; w < timeWindows; w++)
             {
+                StringVector flightTime = flight[w];
                 for(int a = 0; a < aircraftTypes; a++)
                 {
+                    StringVector aircraft = aircrafts[a];
+
                     double price = std::stod(prices[a]);
                     double caskValue = std::stod(cask[a]);
-                    sum += price * flightData[l][w][a].passengerNumber - (caskValue * flightData[l][w][a].flightFrequency);
+                    int maxSeatCapacity = std::stoi(aircraft[ASSENTOS]);
+
+                    double flightDistance = std::stod(flightTime[2]);
+                    if (flightData[l][w][a].flightFrequency > 0)
+                    {
+                        sum += price * flightData[l][w][a].passengerNumber - (caskValue * flightData[l][w][a].flightFrequency * flightDistance * maxSeatCapacity);
+                    }
                 }
             }
         }
-        ind.fitness = sum;
+        ind.fitness = sum+constraint;
         return;
     }
 
@@ -225,8 +255,8 @@ namespace GP
 
         int crossoverPointFlight = rand() % fstChild.ch.flightData.size();
 
-
-        for(int m = crossoverPointFlight; m < fstChild.ch.flightData.size(); m++)
+        std::swap(fstChild.ch.flightData[crossoverPointFlight], sndChild.ch.flightData[crossoverPointFlight]);
+        /*for(int m = crossoverPointFlight; m < fstChild.ch.flightData.size(); m++)
         {
             int secondPoint = rand() % fstChild.ch.flightData[m].size();
             for(int n = secondPoint; n < fstChild.ch.flightData[m].size(); n++)
@@ -235,9 +265,24 @@ namespace GP
                 for (int o = thirdPoint; o < fstChild.ch.flightData[m][n].size(); o++)
                 {
                     std::swap(fstChild.ch.flightData[m][n][o], sndChild.ch.flightData[m][n][o]);
+                    if (m + 10 > 20)
+                    {
+                        if (n < 27)
+                        {
+                            fstChild.ch.flightData[m - 10][n + 1][o].flightFrequency = fstChild.ch.flightData[m][n][o].flightFrequency;
+                        }
+                    }
+                    if (m + 10 < 20)
+                    {
+                        if (n > 0)
+                        {
+                            fstChild.ch.flightData[m + 10][n - 1][o].flightFrequency = fstChild.ch.flightData[m][n][o].flightFrequency;
+                        }
+                    }
                 }
             }
-        }
+            
+        }*/
     }
 
     void mutate(Individual& ind)
@@ -248,16 +293,24 @@ namespace GP
         {
             for(int j = 0; j < ind.ch.flightData[mutationPointFlight][i].size(); j++)
             {
-                if(j > 0)
-                {
-                    ind.ch.flightData[mutationPointFlight][i][j] = ind.ch.flightData[mutationPointFlight+10][i][j-1];
-                }
-                else
-                {
-                    ind.ch.flightData[mutationPointFlight][i][j].flightFrequency = rand() % 30;
+                ind.ch.flightData[mutationPointFlight][i][j].flightFrequency = (rand() % 50) + 1;
+                if (mutationPointFlight + 10 > 20)
+                {   
+                    if (i < 27)
+                    {
+                        ind.ch.flightData[mutationPointFlight - 10][i + 1][j].flightFrequency = ind.ch.flightData[mutationPointFlight][i][j].flightFrequency;
+                    }
                 }
 
-                ind.ch.flightData[mutationPointFlight][i][j].passengerNumber = rand() % 30;
+                if (mutationPointFlight + 10 < 20)
+                {
+                    if (i > 0)
+                    {
+                        ind.ch.flightData[mutationPointFlight + 10][i - 1][j].flightFrequency = ind.ch.flightData[mutationPointFlight][i][j].flightFrequency;
+                    }
+                }
+
+                ind.ch.flightData[mutationPointFlight][i][j].passengerNumber = rand() % 150;
 
             }
         }
@@ -268,9 +321,9 @@ namespace GP
     Individual search(InstanceType flightLegs, StringMatrix cask, StringMatrix passagem, InstanceType instance, int generations, int populationSize, float mr, float cr)
     {
         Population pop;
-        int aircraftTypes = util::passagem(instance).size() - 2;
+        int aircraftTypes = 7;
         // 150 counting the return flight
-        int flightLegsSize = 10;
+        int flightLegsSize = 20;
         // Four daily shifts, as per article
         int timeWindows = 28;
 
@@ -298,6 +351,15 @@ namespace GP
             {
                 best = pop[0];
             }
+
+            /*for (int j = 0; j < POPULATION_SIZE;j++)
+            {
+                for (auto k : pop)
+                {
+                    std::cout << k.ch.flightData[0][0][0].flightFrequency << std::endl;
+                }
+            }*/
+
             std::cout << "Generation: " << i << " Best fitness: " << best.fitness << std::endl;
         }
 
@@ -305,4 +367,36 @@ namespace GP
         return best;
     }
 
+}
+
+namespace util
+{
+    void writeBestIndividual(Individual& ind, InstanceType instance)
+    {
+        std::ofstream file(std::string(RESULT)+"/best_individual.txt");
+        StringMatrix aircrafts = util::aeronave(instance);
+        int passengerSum = 0;
+        if (file.is_open())
+        {
+            file << "Fitness: " << ind.fitness << "\n";
+            for(int i = 0; i < ind.ch.flightData.size(); i++) 
+            {
+                for(int j = 0; j < ind.ch.flightData[i].size(); j++)
+                {
+                    for(int k = 0; k < ind.ch.flightData[i][j].size(); k++) 
+                    {
+                        passengerSum += ind.ch.flightData[i][j][k].passengerNumber;
+                        file << "Flight " << i << " Turn " << j << " Aircraft " << k << " - Frequency: " 
+                                << ind.ch.flightData[i][j][k].flightFrequency 
+                                << ", Passengers: " << ind.ch.flightData[i][j][k].passengerNumber << std::endl;
+                    }
+                }
+            }
+            file.close();
+        }
+        else
+        {
+            std::cerr << "Unable to open file";
+        }
+    }
 }
