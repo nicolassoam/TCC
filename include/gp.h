@@ -79,5 +79,6 @@ namespace GP
 namespace util
 {
     void writeBestIndividual(Individual& ind, InstanceType instance);
+    void sortBestFlight(Individual& best);
 }
 #endif

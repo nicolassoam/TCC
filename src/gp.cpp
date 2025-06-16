@@ -108,7 +108,7 @@ namespace GP
 
                     if(flightData[i][j][k].flightFrequency == 0 && flightData[i][j][k].passengerNumber > 0)
                     {
-                        penalty += CONSTRAINT_PEN * 100;
+                        penalty += CONSTRAINT_PEN ;
                     }
 
                     // fleetSize[k]++;
@@ -310,7 +310,7 @@ namespace GP
                     }
                 }
 
-                ind.ch.flightData[mutationPointFlight][i][j].passengerNumber = rand() % 150;
+                ind.ch.flightData[mutationPointFlight][i][j].passengerNumber = rand() % 450;
 
             }
         }
@@ -342,6 +342,11 @@ namespace GP
         for (int i = 0; i < generations; i++)
         {
             Population children = newGen(pop, instance, mr, cr);
+            pop = children;
+            for (int j = 0; j < POPULATION_SIZE; j++)
+            {
+                evaluateIndividual(pop[j], instance, passagem, cask, flightLegs);
+            }
             // worst fitness first
             std::sort(std::execution::par_unseq,pop.begin(), pop.end(), [](Individual& a, Individual& b){return a.fitness < b.fitness;});
             pop[0] = best;
@@ -371,14 +376,27 @@ namespace GP
 
 namespace util
 {
+    void sortBestFlight(Individual& best)
+    {
+        for (auto& flightMatrix : best.ch.flightData)
+        {
+            for (auto& timeWindow : flightMatrix)
+            {
+                std::sort(std::execution::par_unseq, timeWindow.begin(), timeWindow.end(),
+                          [](const Flight& a, const Flight& b) { return a.passengerNumber > b.passengerNumber; });
+            }
+        }
+    }
     void writeBestIndividual(Individual& ind, InstanceType instance)
     {
-        std::ofstream file(std::string(RESULT)+"/best_individual.txt");
+        std::ofstream file(std::string(RESULT)+"/best_individual.csv");
         StringMatrix aircrafts = util::aeronave(instance);
+        //sortBestFlight(ind);
+        std::vector<std::string> days = {"SEG", "TER", "QUA", "QUI", "SEX", "SAB", "DOM"};
         int passengerSum = 0;
         if (file.is_open())
         {
-            file << "Fitness: " << ind.fitness << "\n";
+            file << "Flight;Turn;Aircraft;Frequency;Passengers" << ind.fitness << "\n";
             for(int i = 0; i < ind.ch.flightData.size(); i++) 
             {
                 for(int j = 0; j < ind.ch.flightData[i].size(); j++)
@@ -386,9 +404,9 @@ namespace util
                     for(int k = 0; k < ind.ch.flightData[i][j].size(); k++) 
                     {
                         passengerSum += ind.ch.flightData[i][j][k].passengerNumber;
-                        file << "Flight " << i << " Turn " << j << " Aircraft " << k << " - Frequency: " 
+                        file << i << ";" << j << ";" << k << ";" 
                                 << ind.ch.flightData[i][j][k].flightFrequency 
-                                << ", Passengers: " << ind.ch.flightData[i][j][k].passengerNumber << std::endl;
+                                << ";" << ind.ch.flightData[i][j][k].passengerNumber << std::endl;
                     }
                 }
             }

@@ -17,7 +17,7 @@ int main()
     InstanceType flightLegs = util::FlightLegs(flightData, passagem);
      
     std::cout << "Flight legs size: " << flightLegs.size() << std::endl;    
-    Individual individual = GP::search(flightLegs, caskValues, prices, instances, 50, POPULATION_SIZE);
-    util::writeBestIndividual(individual);
+    Individual individual = GP::search(flightLegs, caskValues, prices, instances, 100, POPULATION_SIZE);
+    util::writeBestIndividual(individual, instances);
     return 0;
 }
