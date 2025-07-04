@@ -16,6 +16,7 @@ set (GPU_ON 1)
 set (DEBUG 1)
 configure_file(${PROJECT_DIR}/config.h.in ${PROJECT_DIR}/include/config.h)
 add_executable(main "src/main.cu")
+
 target_sources(main PRIVATE "util/util.cpp")
 target_sources(main PRIVATE "src/gp.cpp")
 target_include_directories(main PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})

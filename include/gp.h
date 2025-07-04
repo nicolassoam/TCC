@@ -4,10 +4,10 @@
 #include <vector>
 #include "util.h"
 
-#define POPULATION_SIZE 40
+#define POPULATION_SIZE 60
 #define TOURNAMENT_SIZE 3
 #define AIRCRAFT_TYPES 7
-#define CONSTRAINT_PEN -1000000000
+#define CONSTRAINT_PEN -250
 #define BIG_M 20000
 #define MAX_ASSIGNED_MODELS 300
 #define MAX_ASSIGNED_TYPES 7
@@ -17,6 +17,7 @@ struct Flight
 {
     int flightFrequency;
     int passengerNumber;
+
     Flight(int flightFrequency, int passengerNumber)
     {
         this->flightFrequency = flightFrequency;
@@ -29,10 +30,11 @@ using FlightMatrix = std::vector<std::vector<Flight>>;
 struct Chromossome
 {
     std::vector<FlightMatrix> flightData;
-    
+    std::vector<int> allowedAircraft;
     Chromossome (int totalAircraftsTypes, int flightLegs, int timeWindows)
     {
         flightData.resize(flightLegs);
+        allowedAircraft.resize(totalAircraftsTypes);
         for(int i = 0; i < flightLegs; i++)
         {
             flightData[i].resize(timeWindows);
@@ -63,14 +65,14 @@ struct Individual
 using Population = std::vector<Individual>;
 namespace GP
 {
-    Population initializePopulation(int populationSize, int aircraftTypes, int flightLegs, int timeWindows);
+    Population initializePopulation(StringMatrix aircrafts, int populationSize, int aircraftTypes, int flightLegs, int timeWindows);
     Population newGen(Population& population, InstanceType instance,float cr, float mr);
     void evaluateIndividual(Individual& ind, InstanceType instance, 
                             StringMatrix flightLegPrices, StringMatrix caskValues, InstanceType flightsMap);
     long constraintCheck(Individual& ind, InstanceType instance, InstanceType flightsMap);
     int tournament(Population population, int k);
     void crossover(Individual& fstMate, Individual& sndMate);
-    void mutate(Individual& mutated);
+    void mutate(StringMatrix aircrafts, Individual& mutated);
     Individual search(InstanceType flightLegs, StringMatrix cask, StringMatrix passagem, 
                       InstanceType instance, int generations, 
                       int populationSize, float mr = 0.9, float cr = 0.9);
@@ -78,7 +80,7 @@ namespace GP
 
 namespace util
 {
-    void writeBestIndividual(Individual& ind, InstanceType instance);
+    void writeBestIndividual(Individual& ind, InstanceType flightLegs, InstanceType instance);
     void sortBestFlight(Individual& best);
 }
 #endif

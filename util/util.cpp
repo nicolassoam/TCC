@@ -121,6 +121,7 @@ namespace util
                     flightLeg.push_back(flightLegData[Rotas2_3::PISTA]);
                     flightLeg.push_back(flightLegData[Rotas2_3::DEMANDA]);
                     flightLeg.push_back(flightLegData[Rotas2_3::DISTANCIA]);
+                    flightLeg.push_back(flightLegData[Rotas2_3::OD]);
                     flightData.push_back(flightLeg);
                     
                 }
