@@ -4,15 +4,23 @@
 #include <vector>
 #include "util.h"
 
-#define POPULATION_SIZE 60
-#define TOURNAMENT_SIZE 3
+#define POPULATION_SIZE 300
+#define TOURNAMENT_SIZE 5
 #define AIRCRAFT_TYPES 7
-#define CONSTRAINT_PEN -250
+#define CONSTRAINT_PEN -15
 #define BIG_M 20000
 #define MAX_ASSIGNED_MODELS 300
 #define MAX_ASSIGNED_TYPES 7
 
 using IntMatrix = std::vector<std::vector<int>>;
+
+struct Aircraft
+{
+    bool allowed = false;
+    int count = 0;
+    Aircraft() {};
+    ~Aircraft() {};
+};
 struct Flight
 {
     int flightFrequency;
@@ -30,7 +38,7 @@ using FlightMatrix = std::vector<std::vector<Flight>>;
 struct Chromossome
 {
     std::vector<FlightMatrix> flightData;
-    std::vector<int> allowedAircraft;
+    std::vector<Aircraft> allowedAircraft;
     Chromossome (int totalAircraftsTypes, int flightLegs, int timeWindows)
     {
         flightData.resize(flightLegs);
@@ -65,17 +73,27 @@ struct Individual
 using Population = std::vector<Individual>;
 namespace GP
 {
-    Population initializePopulation(StringMatrix aircrafts, int populationSize, int aircraftTypes, int flightLegs, int timeWindows);
-    Population newGen(Population& population, InstanceType instance,float cr, float mr);
+    Population initializePopulation(InstanceType flightsMap,StringMatrix aircrafts, int populationSize, int aircraftTypes, int flightLegs, int timeWindows);
+    Population newGen(Population& population, InstanceType flightsMap, InstanceType instance, const StringMatrix& passagem, const StringMatrix& cask ,float cr, float mr);
     void evaluateIndividual(Individual& ind, InstanceType instance, 
                             StringMatrix flightLegPrices, StringMatrix caskValues, InstanceType flightsMap);
     long constraintCheck(Individual& ind, InstanceType instance, InstanceType flightsMap);
     int tournament(Population population, int k);
-    void crossover(Individual& fstMate, Individual& sndMate);
-    void mutate(StringMatrix aircrafts, Individual& mutated);
+    std::pair<Individual, Individual> crossover(const Individual& fstMate, const Individual& sndMate, const StringMatrix& aircrafts, const InstanceType& flightsMap);
+    void mutate(Individual& ind, const InstanceType& instance, const StringMatrix& aircrafts, const InstanceType& flightsMap, const StringMatrix& passagem, const StringMatrix& cask);
+    void mutateHillClimb(Individual& ind, const InstanceType& instance, const StringMatrix& aircrafts, const InstanceType& flightsMap, const StringMatrix& passagem, const StringMatrix& cask);
+    void mutateAddFlight(Individual& ind, const InstanceType& instance, const StringMatrix& aircrafts, const InstanceType& flightsMap);
+    void mutateRemoveFlight(Individual& ind);
+    void mutateSwapAircraft(Individual& ind, const StringMatrix& aircrafts);
+    void mutateAdjustPassengers(Individual& ind, const InstanceType& instance, const StringMatrix& aircrafts, const InstanceType& flightsMap);
+    void mutateFlipAircraftType(Individual& ind, const StringMatrix& aircrafts, const InstanceType& flightsMap);
+    void fixFlippedAircraft(Individual& ind, int flippedAircraft, const StringMatrix& aircrafts, const InstanceType& flightsMap);
+    void repairIndividual(Individual& ind);
+    void adequateAircraftAmount(Individual& ind);
+    void repairReturnFlightFrequencies(Individual& ind, int legIndex, int timeWindow);
     Individual search(InstanceType flightLegs, StringMatrix cask, StringMatrix passagem, 
                       InstanceType instance, int generations, 
-                      int populationSize, float mr = 0.9, float cr = 0.9);
+                      int populationSize, float mr = 0.4, float cr = 0.8);
 }
 
 namespace util

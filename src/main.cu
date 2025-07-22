@@ -15,9 +15,15 @@ int main()
     StringMatrix prices = util::mapDestinationToAircraftTicketPrice(passagem, flightData);
     StringMatrix caskValues = util::mapDestinationToAircraftTicketPrice(cask, flightData);
     InstanceType flightLegs = util::FlightLegs(flightData, passagem);
-     
-    std::cout << "Flight legs size: " << flightLegs.size() << std::endl;    
-    Individual individual = GP::search(flightLegs, caskValues, prices, instances, 50, POPULATION_SIZE);
-    util::writeBestIndividual(individual, flightLegs, instances);
+    srand(10);
+    std::cout << "Flight legs size: " << flightLegs.size() << std::endl;  
+    std::vector<Individual> bestIndividuals;
+    for (int i = 0; i < 1; i++)
+    {
+        Individual individual = GP::search(flightLegs, caskValues, prices, instances, 300, POPULATION_SIZE);
+        bestIndividuals.push_back(individual);
+    }
+    std::sort(bestIndividuals.begin(), bestIndividuals.end(), [](Individual& a, Individual& b) {return a.fitness > b.fitness;});
+    util::writeBestIndividual(bestIndividuals[0], flightLegs, instances);
     return 0;
 }
