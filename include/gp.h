@@ -24,12 +24,15 @@ struct Aircraft
 struct Flight
 {
     int flightFrequency;
-    int passengerNumber;
-
+    int outPassengerNumber;
+    int inPassengerNumber;
+    int inTurn;
+    int outTurn;
+    int aircraftIndex;
     Flight(int flightFrequency, int passengerNumber)
     {
         this->flightFrequency = flightFrequency;
-        this->passengerNumber = passengerNumber;
+        this->outPassengerNumber = passengerNumber;
     };
     Flight () {};
     ~Flight () {};
@@ -37,20 +40,11 @@ struct Flight
 using FlightMatrix = std::vector<std::vector<Flight>>;
 struct Chromossome
 {
-    std::vector<FlightMatrix> flightData;
+    std::vector<Flight> flightData;
     std::vector<Aircraft> allowedAircraft;
     Chromossome (int totalAircraftsTypes, int flightLegs, int timeWindows)
     {
-        flightData.resize(flightLegs);
         allowedAircraft.resize(totalAircraftsTypes);
-        for(int i = 0; i < flightLegs; i++)
-        {
-            flightData[i].resize(timeWindows);
-            for(int j = 0; j < timeWindows; j++)
-            {
-                flightData[i][j].resize(totalAircraftsTypes, Flight(0, 0));
-            }
-        }
     };
     Chromossome () {}; 
     ~Chromossome () {};

@@ -61,7 +61,7 @@ namespace GP
         StringMatrix aircrafts = util::aeronave(instance);
         int penalty = 0;
         // pick vectors from individual
-        std::vector<FlightMatrix>& flightData = ind.ch.flightData;
+        std::vector<Flight>& flightData = ind.ch.flightData;
         std::vector<Aircraft>& allowedAircraft = ind.ch.allowedAircraft;
         //check constraints, if violated worst fitness
         int flightLegs = 20;
@@ -87,8 +87,11 @@ namespace GP
                     int aircraftRange = std::stoi(aircraft[ALCANCE]);
                     double flightDistance = std::stod(flightTime[2]);
 
-                    int& passengerNumber = flightData[i][j][k].passengerNumber;
-                    int& flightFrequency = flightData[i][j][k].flightFrequency;
+                    int& outPassengerNumber = flightData[i].outPassengerNumber;
+                    int& inPassengerNumber = flightData[i].inPassengerNumber;
+                    int& inTurn = flightData[i].inTurn;
+                    int& outTurn = flightData[i].outTurn;
+                    int& flightFrequency = flightData[i].flightFrequency;
                     Aircraft& allowCraft = allowedAircraft[k];
 
                    /* if (demand == 0)
@@ -218,8 +221,7 @@ namespace GP
         {
             Individual ind = Individual(aircraftTypes, flightLegs, timeWindows);
 
-            std::vector<FlightMatrix>& flightData = ind.ch.flightData;
-            flightData.resize(flightLegs);
+            std::vector<Flight>& flightData = ind.ch.flightData;
             bool firstModel = false;
             do
             {
@@ -255,8 +257,11 @@ namespace GP
                         StringVector aircraft = aircrafts[n];
                         int maxSeatCapacity = std::stoi(aircraft[ASSENTOS]);
 
-                        int& passengerNumber = flightData[k][m][n].passengerNumber;
-                        int& flightFrequency = flightData[k][m][n].flightFrequency;
+                        int& outPassengerNumber = flightData[i].outPassengerNumber;
+                        int& inPassengerNumber = flightData[i].inPassengerNumber;
+                        int& inTurn = flightData[i].inTurn;
+                        int& outTurn = flightData[i].outTurn;
+                        int& flightFrequency = flightData[i].flightFrequency;
                         Aircraft& allowedAircraft = ind.ch.allowedAircraft[n];
 
                         if (!allowedAircraft.allowed)
