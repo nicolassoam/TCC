@@ -36,9 +36,58 @@ namespace util
         return v;
     }
 
-    std::vector<Route> readRoute()
+    std::vector<AircraftType> readAicrafts(StringMatrix aircrafts)
     {
-        
+        std::vector<AircraftType>aircraftTypes;
+        for (int a = 0; a < aircrafts.size(); a++)
+        {
+            StringVector aircraft = aircrafts[a];
+            AircraftType air;
+            air.id = a;
+            air.name = aircraft[Aeronave::FROTA];
+            air.capacity = std::stod(aircraft[ASSENTOS]);
+            air.range_km = std::stod(aircraft[ALCANCE]);
+            aircraftTypes.push_back(air);
+        }
+        return aircraftTypes;
+    }
+
+    std::vector<Route> readRoute(StringMatrix prices, StringMatrix cask, InstanceType flightData)
+    {
+        std::vector<Route> routes;
+        for (int l = 0; l < flightData.size(); l++)
+        {
+            StringMatrix flight = flightData[l];
+            Route r;
+            r.id = l;
+            r.origin_icao = flightData[l][0][4];
+            r.destination_icao = flightData[l][0][5];
+            r.distance_km = std::stod(flightData[l][0][2]);
+            
+            for (int w = 0; w < flight.size(); w++)
+            {   
+                r.demand_per_window.push_back(std::stoi(flightData[l][w][1]));
+            }
+            std::vector<String> price;
+            std::vector<String> caskValues;
+            if (l < 10)
+            {
+                price = prices[l];
+                caskValues = cask[l];
+            }
+            else
+            {
+                price = prices[l - 10];
+                caskValues = cask[l - 10];
+            }
+            for (int a = 0; a < 7; a++)
+            {
+                r.ticket_prices.insert({ a, std::stod(price[a]) });
+                r.cask_values.insert({ a, std::stod(caskValues[a]) });
+            }
+            routes.push_back(r);
+        }
+        return routes;
     }
 
     StringMatrix mapDestinationToAircraftTicketPrice(StringMatrix &dataMatrix, StringMatrix &flightMatrix)
@@ -129,6 +178,8 @@ namespace util
                     flightLeg.push_back(flightLegData[Rotas2_3::DEMANDA]);
                     flightLeg.push_back(flightLegData[Rotas2_3::DISTANCIA]);
                     flightLeg.push_back(flightLegData[Rotas2_3::OD]);
+                    flightLeg.push_back(flightLegData[Rotas2_3::ORIGEM]);
+                    flightLeg.push_back(flightLegData[Rotas2_3::DESTINO]);
                     flightData.push_back(flightLeg);
                     
                 }
@@ -166,6 +217,8 @@ namespace util
                     flightLeg.push_back(flightLegData[Rotas2_3::DEMANDA]);
                     flightLeg.push_back(flightLegData[Rotas2_3::DISTANCIA]);
                     flightLeg.push_back(flightLegData[Rotas2_3::OD]);
+                    flightLeg.push_back(flightLegData[Rotas2_3::ORIGEM]);
+                    flightLeg.push_back(flightLegData[Rotas2_3::DESTINO]);
                     flightData.push_back(flightLeg);
                     
                 }

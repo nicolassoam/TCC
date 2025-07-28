@@ -52,6 +52,8 @@ namespace util
     
     StringMatrix mapDestinationToAircraftTicketPrice(StringMatrix& dataMatrix, StringMatrix& flightMatrix);
     InstanceType FlightLegs(StringMatrix& dataMatrixFlight, StringMatrix& dataMatrixPass);
+    std::vector<Route> readRoute(StringMatrix prices, StringMatrix cask, InstanceType flightData);
+    std::vector<AircraftType> readAicrafts(StringMatrix aircrafts);
 }
 
 
