@@ -12,6 +12,7 @@ int main()
     StringMatrix flightData = util::rotas2(instances);
     StringMatrix passagem = util::passagem(instances);
     std::vector<Flight> flights;
+    std::vector<Route> routes;
     StringMatrix prices = util::mapDestinationToAircraftTicketPrice(passagem, flightData);
     StringMatrix caskValues = util::mapDestinationToAircraftTicketPrice(cask, flightData);
     InstanceType flightLegs = util::FlightLegs(flightData, passagem);

@@ -20,6 +20,23 @@ using StringVector = std::vector<String>;
 using StringMatrix = std::vector<StringVector>;
 using InstanceType = std::vector<StringMatrix>;
 
+struct AircraftType {
+    int id;
+    std::string name;
+    int capacity;
+    int range_km;
+};
+
+struct Route {
+    int id;
+    std::string origin_icao;
+    std::string destination_icao;
+    double distance_km;
+    std::map<int, double> ticket_prices;
+    std::map<int, double> cask_values;
+    std::vector<int> demand_per_window;
+};
+
 namespace util
 {
     InstanceType loadInstance();

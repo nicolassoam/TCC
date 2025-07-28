@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 #include "util.h"
-
+#include <random>
 #define POPULATION_SIZE 500
 #define TOURNAMENT_SIZE 5
 #define AIRCRAFT_TYPES 7
@@ -21,21 +21,18 @@ struct Aircraft
     Aircraft() {};
     ~Aircraft() {};
 };
+
+
 struct Flight
 {
     int flightFrequency;
+    int route;
     int outPassengerNumber;
     int inPassengerNumber;
     int inTurn;
     int outTurn;
     int aircraftIndex;
-    Flight(int flightFrequency, int passengerNumber)
-    {
-        this->flightFrequency = flightFrequency;
-        this->outPassengerNumber = passengerNumber;
-    };
-    Flight () {};
-    ~Flight () {};
+    Flight() : aircraftIndex(0), route(0), outTurn(0), outPassengerNumber(0), inTurn(0), inPassengerNumber(0) {}
 };
 using FlightMatrix = std::vector<std::vector<Flight>>;
 struct Chromossome

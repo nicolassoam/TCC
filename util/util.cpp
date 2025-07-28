@@ -36,6 +36,11 @@ namespace util
         return v;
     }
 
+    std::vector<Route> readRoute()
+    {
+        
+    }
+
     StringMatrix mapDestinationToAircraftTicketPrice(StringMatrix &dataMatrix, StringMatrix &flightMatrix)
     {
         StringMatrix pricesPerDestinationOnAircraftType;
