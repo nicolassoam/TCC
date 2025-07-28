@@ -29,8 +29,10 @@ struct AircraftType {
 
 struct Route {
     int id;
-    std::string origin_icao;
-    std::string destination_icao;
+    int origin_id;
+    int destination_id;    
+    String origin_icao;
+    String destination_icao;
     double distance_km;
     std::map<int, double> ticket_prices;
     std::map<int, double> cask_values;

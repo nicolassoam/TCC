@@ -60,10 +60,19 @@ namespace util
             StringMatrix flight = flightData[l];
             Route r;
             r.id = l;
+            if (l < 10)
+            {
+                r.origin_id = 0;
+                r.destination_id = l;
+            }
+            else
+            {
+                r.origin_id = l - 10;
+                r.destination_id = 0;
+            }
+            r.distance_km = std::stod(flightData[l][0][2]);
             r.origin_icao = flightData[l][0][4];
             r.destination_icao = flightData[l][0][5];
-            r.distance_km = std::stod(flightData[l][0][2]);
-            
             for (int w = 0; w < flight.size(); w++)
             {   
                 r.demand_per_window.push_back(std::stoi(flightData[l][w][1]));

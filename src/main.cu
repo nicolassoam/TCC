@@ -20,24 +20,10 @@ int main()
     InstanceType flightLegs = util::FlightLegs(flightData, passagem);
     routes = util::readRoute(prices, caskValues, flightLegs);
     aircraftTypes = util::readAicrafts(aircrafts);
-    for (auto r : routes)
-    {
-        std::cout << "id: " << r.id
-            << " Origin: " << r.origin_icao
-            << " Destination: " << r.destination_icao
-            << " Distance: " << r.distance_km << std::endl
-            << " Demands: " << std::endl;
-        for (auto demand : r.demand_per_window)
-        {
-            std::cout << demand << std::endl;
-        }
-        std::cout << " Prices: " << std::endl;
-        for (auto i : r.ticket_prices) 
-        {
-            std::cout << i.first << ", " << i.second << std::endl;
-        }
-
-    }
+    std::cout << "Origin :" << routes[0].origin_icao << std::endl;
+    std::cout << "Destination :" << routes[0].destination_icao << std::endl;
+    std::cout << "Origin :" << routes[10].origin_icao << std::endl;
+    std::cout << "Destination :" << routes[10].destination_icao << std::endl;
 
     for (auto a : aircraftTypes)
     {
@@ -46,14 +32,15 @@ int main()
             << " Capacity: " << a.capacity
             << " Range: " << a.range_km << std::endl;
     }
-   /* std::cout << "Flight legs size: " << flightLegs.size() << std::endl;  
+    std::cout << "Flight legs size: " << flightLegs.size() << std::endl;  
     std::vector<Individual> bestIndividuals;
     for (int i = 0; i < 1; i++)
     {
-        Individual individual = GP::search(flightLegs, caskValues, prices, instances, 2000, POPULATION_SIZE);
+        Individual individual = GP::search(routes, aircraftTypes, 400, POPULATION_SIZE);
         bestIndividuals.push_back(individual);
     }
+    
     std::sort(bestIndividuals.begin(), bestIndividuals.end(), [](Individual& a, Individual& b) {return a.fitness > b.fitness;});
-    util::writeBestIndividual(bestIndividuals[0], flightLegs, instances);*/
+    util::writeBestIndividual(bestIndividuals[0], flightLegs, instances, routes, aircraftTypes);
     return 0;
 }
