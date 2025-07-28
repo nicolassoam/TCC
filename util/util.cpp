@@ -82,6 +82,7 @@ namespace util
         InstanceType flights;
         int destinationCount = 0;
         std::set<String> orderOfDestinations;
+        std::set<String> orderOfDestinationsOrigin;
 
         int dataMatrixPassSize = dataMatrixPass.size();
 
@@ -97,6 +98,7 @@ namespace util
         
         destinationCount = orderOfDestinations.size();
         std::set<String>::iterator currentPointer = orderOfDestinations.begin();
+        orderOfDestinationsOrigin = orderOfDestinations;
         while (!orderOfDestinations.empty())
         {
             StringMatrix flightData;
@@ -111,6 +113,43 @@ namespace util
                 String flightLegDestination = " ";
                 
                 flightLegDestination = flightLegData[Rotas2_3::DESTINO];
+                if (flightLegDestination == "SBGO")
+                {
+                    continue; 
+                }
+                
+                if (currentDestination == flightLegDestination)
+                {
+                    flightLeg.push_back(flightLegData[Rotas2_3::PISTA]);
+                    flightLeg.push_back(flightLegData[Rotas2_3::DEMANDA]);
+                    flightLeg.push_back(flightLegData[Rotas2_3::DISTANCIA]);
+                    flightLeg.push_back(flightLegData[Rotas2_3::OD]);
+                    flightData.push_back(flightLeg);
+                    
+                }
+            }
+            
+            if (!flightData.empty())
+            {
+                flights.push_back(flightData);
+            }
+
+        }   
+        std::set<String>::iterator currentPointer2 = orderOfDestinationsOrigin.begin();
+        while (!orderOfDestinationsOrigin.empty())
+        {
+            StringMatrix flightData;
+            String currentDestination = *currentPointer2;
+            currentPointer2++;
+            orderOfDestinationsOrigin.erase(currentDestination);
+
+            for (int k = 0; k < dataMatrixFlight.size(); k++)
+            {
+                StringVector flightLeg;
+                StringVector flightLegData = dataMatrixFlight[k];
+                String flightLegDestination = " ";
+                
+                flightLegDestination = flightLegData[Rotas2_3::ORIGEM];
                 if (flightLegDestination == "SBGO")
                 {
                     continue; 

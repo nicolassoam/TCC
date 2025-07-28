@@ -20,7 +20,7 @@ int main()
     std::vector<Individual> bestIndividuals;
     for (int i = 0; i < 1; i++)
     {
-        Individual individual = GP::search(flightLegs, caskValues, prices, instances, 300, POPULATION_SIZE);
+        Individual individual = GP::search(flightLegs, caskValues, prices, instances, 2000, POPULATION_SIZE);
         bestIndividuals.push_back(individual);
     }
     std::sort(bestIndividuals.begin(), bestIndividuals.end(), [](Individual& a, Individual& b) {return a.fitness > b.fitness;});

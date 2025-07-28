@@ -68,17 +68,14 @@ namespace GP
         int timeWindows = 28;
         int aircraftTypes = 7;
         int sum = 0;
+        int numSpokes = flightLegs / 2;
+        long flow_penalty = 0;
         for(int i = 0; i < flightLegs; i++)
         {
             StringMatrix flight;
-            if (i < 10)
-            {
-                flight = flightsMap[i];
-            }
-            else
-            {
-                flight = flightsMap[i - 10];
-            }
+            
+            flight = flightsMap[i];
+            
             for(int j = 0; j < timeWindows; j++)
             {
                 StringVector flightTime = flight[j];
@@ -94,7 +91,7 @@ namespace GP
                     int& flightFrequency = flightData[i][j][k].flightFrequency;
                     Aircraft& allowCraft = allowedAircraft[k];
 
-                    if (demand == 0)
+                   /* if (demand == 0)
                     {
                         flightFrequency = 0;
                         passengerNumber = 0;
@@ -115,7 +112,7 @@ namespace GP
                             inFreq = 0;
                             inPassenger = 0;
                         }
-                    }
+                    }*/
 
                     if (!allowCraft.allowed && flightFrequency > 0)
                     {
@@ -147,7 +144,7 @@ namespace GP
 
                     if(flightFrequency == 0 && passengerNumber > 0)
                     {
-                        penalty += CONSTRAINT_PEN;
+                        penalty += CONSTRAINT_PEN * 100;
                     }
 
                     // fleetSize[k]++;
@@ -166,7 +163,51 @@ namespace GP
             }
         }
 
-        return penalty;
+        for (int a = 0; a < aircraftTypes; ++a)
+        {
+            std::vector<std::vector<int>> frequencyBalance(numSpokes + 1, std::vector<int>(timeWindows, 0));
+
+            for (int w = 0; w < timeWindows; ++w)
+            {
+                if (w > 0) {
+                    for (int s = 0; s <= numSpokes; ++s) {
+                        frequencyBalance[s][w] += frequencyBalance[s][w - 1];
+                    }
+                }
+
+                int totalOutboundFromHub = 0;
+                for (int l = 0; l < numSpokes; ++l) {
+                    totalOutboundFromHub += flightData[l][w][a].flightFrequency;
+                }
+
+                frequencyBalance[0][w] -= totalOutboundFromHub;
+
+                if (frequencyBalance[0][w] < 0) {
+                    flow_penalty += CONSTRAINT_PEN * 1000 * abs(frequencyBalance[0][w]);
+                }
+
+                int arrivalWindow = (w + 1) % timeWindows;
+                for (int l = 0; l < numSpokes; ++l) {
+                    int spokeIndex = l + 1;
+                    frequencyBalance[spokeIndex][arrivalWindow] += flightData[l][w][a].flightFrequency;
+                }
+
+                for (int l = 0; l < numSpokes; ++l) {
+                    int spokeIndex = l + 1;
+                    int outboundFromSpoke = flightData[l + numSpokes][w][a].flightFrequency;
+
+                    frequencyBalance[spokeIndex][w] -= outboundFromSpoke;
+
+                    if (frequencyBalance[spokeIndex][w] < 0) {
+                        flow_penalty += CONSTRAINT_PEN * 1000 * abs(frequencyBalance[spokeIndex][w]);
+                    }
+
+                    frequencyBalance[0][arrivalWindow] += outboundFromSpoke;
+                }
+            }
+        }
+
+        return penalty + flow_penalty;
     }
 
     Population initializePopulation(InstanceType flightsMap, StringMatrix aircrafts,int populationSize, int aircraftTypes, int flightLegs, int timeWindows)
@@ -199,21 +240,15 @@ namespace GP
                     }
                 }
             } while (!firstModel);
-            for(int k = 0; k < flightLegs; k++)
+            for(int k = 0; k < (flightLegs / 2); k++)
             {
                 StringMatrix flight;
-                if (k >= 10)
-                {
-                    flight = flightsMap[k - 10];
-                }
-                else
-                {
-                    flight = flightsMap[k];
-                }
+                
+                flight = flightsMap[k];
+                
                 for(int m = 0; m < timeWindows; m++)
                 {
-                    StringVector flightTurn = flight[m];
-                    int demand = std::stoi(flightTurn[1]);
+                    int demand = std::stoi(flight[m][1]);
 
                     for(int n = 0; n < aircraftTypes; n++)
                     {
@@ -240,7 +275,9 @@ namespace GP
                             flightFrequency = 0;
                             continue;
                         }
-                        passengerNumber = rand() % demand ;
+
+                        passengerNumber = rand() % demand;
+
                         int remainingDemand = demand - passengerNumber;
 
                         if (remainingDemand < 0)
@@ -252,29 +289,30 @@ namespace GP
                         {
                             demand = remainingDemand;
                         }
-
-                        if(k>= 10)
+                        flightFrequency = (passengerNumber + maxSeatCapacity - 1)/maxSeatCapacity;
+                        
+                        // next turn
+                        int nextTurn = m == 27 ? 0 : m + 1;
+                        int nextDemand = findDemandPerTurn(ind, flightsMap, k + 10, nextTurn);
+                        while (nextDemand == 0)
                         {
-                            int previousTurn = m == 0 ? 27 : m - 1;
-                            
-                            flightFrequency = flightData[k - 10][previousTurn][n].flightFrequency;
-                            int capacityMisMatch = (passengerNumber + maxSeatCapacity - 1) / maxSeatCapacity;
-                            if (capacityMisMatch > flightFrequency && flightData[k - 10][previousTurn][n].passengerNumber > 0)
-                            {
-                                flightFrequency = capacityMisMatch;
-                                ind.ch.flightData[k - 10][previousTurn][n].flightFrequency = capacityMisMatch;
-                            }
-                            else
-                            {
-                                passengerNumber = 0;
-                                flightFrequency = 0;
-                            }
-                        }
-                        else
+                            nextTurn = nextTurn == 27 ? 0 : nextTurn + 1;
+                            nextDemand = findDemandPerTurn(ind, flightsMap, k + 10, nextTurn);
+                        } 
+                        
+                        int& nextFrequency = ind.ch.flightData[k + 10][nextTurn][n].flightFrequency;
+                        int& nextPassenger = ind.ch.flightData[k + 10][nextTurn][n].passengerNumber;
+                        nextFrequency = flightFrequency;
+                        if (passengerNumber > 0)
                         {
-                            flightFrequency = (passengerNumber + maxSeatCapacity - 1)/maxSeatCapacity;
+                            nextPassenger = rand() % nextDemand + 1;
                         }
-
+                        int capacityMismatch = (nextPassenger + maxSeatCapacity - 1) / maxSeatCapacity;
+                        if (capacityMismatch > nextFrequency)
+                        {
+                            nextFrequency = capacityMismatch;
+                            flightFrequency = capacityMismatch;
+                        }
                     }
                 }
 
@@ -285,6 +323,33 @@ namespace GP
         return pop;
     }
 
+    int findDemandPerTurn(Individual& ind, const InstanceType& flightsMap, int l, int w)
+    {
+        int totalAircraftTypes = ind.ch.allowedAircraft.size();
+        int demand = std::stoi(flightsMap[l][w][1]);
+        if (demand == 0)
+        {
+            return demand;
+        }
+        for (int a = 0; a < totalAircraftTypes; a++)
+        {
+            if (!ind.ch.allowedAircraft[a].allowed) continue;
+            int& passengerNumber = ind.ch.flightData[l][w][a].passengerNumber;
+            int remainingDemand = demand - passengerNumber;
+            if (remainingDemand < 0)
+            {
+                passengerNumber = demand;
+                demand = 0;
+            }
+            else
+            {
+                demand = remainingDemand;
+            }
+        }
+        return demand;
+    }
+
+
     void evaluateIndividual (Individual& ind, InstanceType instance,
                              StringMatrix flightLegPrices, StringMatrix caskValues, InstanceType flightsMap)
     {
@@ -292,28 +357,26 @@ namespace GP
         StringMatrix aircrafts = util::aeronave(instance);
         StringMatrix cask = util::cask(instance);
         // pick vectors from individual
-        std::vector<FlightMatrix>& flightData = ind.ch.flightData;
         int flightLegs = 20;
         int timeWindows = 28;
         int aircraftTypes = AIRCRAFT_TYPES;
         double sum = 0;
+        long constraint = constraintCheck(ind, instance, flightsMap);
         for(int l = 0; l < flightLegs; l++)
         {
             std::vector<String> prices;
             std::vector<String> cask;
             StringMatrix flight;
-
+            flight = flightsMap[l];
             if (l < 10)
             {
                 prices = flightLegPrices[l];
                 cask = caskValues[l];
-                flight = flightsMap[l];
             }
             else
             {
                 prices = flightLegPrices[l-10];
                 cask = caskValues[l-10];
-                flight = flightsMap[l - 10];
             }
 
             for(int w = 0; w < timeWindows; w++)
@@ -329,31 +392,31 @@ namespace GP
 
                     double flightDistance = std::stod(flightTime[2]);
 
-                    int& flightFrequency = flightData[l][w][a].flightFrequency;
-                    int& passengerNumber = flightData[l][w][a].passengerNumber;
+                    int& flightFrequency = ind.ch.flightData[l][w][a].flightFrequency;
+                    int& passengerNumber = ind.ch.flightData[l][w][a].passengerNumber;
 
-                    if (passengerNumber == 0)
-                    {
-                        flightFrequency = 0;
-                        bool returnFlight = (l >= 10);
-                        if (returnFlight)
-                        {
-                            int previousTurn = w == 0 ? 27 : w - 1;
+                    //if (passengerNumber == 0)
+                    //{
+                    //    flightFrequency = 0;
+                    //    bool returnFlight = (l >= 10);
+                    //    if (returnFlight)
+                    //    {
+                    //        int previousTurn = w == 0 ? 27 : w - 1;
 
-                            int& outFrequency = flightData[l - 10][previousTurn][a].flightFrequency;
-                            int& outPassenger = flightData[l - 10][previousTurn][a].passengerNumber;
-                            outFrequency = 0;
-                            outPassenger = 0;
-                        }
-                        else
-                        {
-                            int nextTurn = w == 27 ? 0 : w + 1;
-                            int& inFrequency = flightData[l + 10][nextTurn][a].flightFrequency;
-                            int& inPassenger = flightData[l + 10][nextTurn][a].passengerNumber;
-                            inFrequency = 0;
-                            inPassenger = 0;
-                        }
-                    }
+                    //        int& outFrequency = ind.ch.flightData[l - 10][previousTurn][a].flightFrequency;
+                    //        int& outPassenger = ind.ch.flightData[l - 10][previousTurn][a].passengerNumber;
+                    //        outFrequency = 0;
+                    //        outPassenger = 0;
+                    //    }
+                    //    else
+                    //    {
+                    //        int nextTurn = w == 27 ? 0 : w + 1;
+                    //        int& inFrequency = ind.ch.flightData[l + 10][nextTurn][a].flightFrequency;
+                    //        int& inPassenger = ind.ch.flightData[l + 10][nextTurn][a].passengerNumber;
+                    //        inFrequency = 0;
+                    //        inPassenger = 0;
+                    //    }
+                    //}
 
                     if (flightFrequency > 0)
                     {
@@ -363,7 +426,7 @@ namespace GP
             }
         }
         // Constraint check
-        long constraint = constraintCheck(ind, instance, flightsMap);
+        
         ind.fitness = sum+constraint;
         return;
     }
@@ -424,16 +487,15 @@ namespace GP
                 repairReturnFlightFrequencies(sndChild, l, w);
             }
         }*/
-        repairIndividual(fstChild);
-        repairIndividual(sndChild);
+        repairIndividual(fstChild, flightsMap);
+        repairIndividual(sndChild, flightsMap);
         return { fstChild, sndChild };
     }
-    void repairIndividual(Individual& ind)
+    void repairIndividual(Individual& ind, const InstanceType& flightsMap)
     {
         int flightLegs = ind.ch.flightData.size();
         int timeWindows = ind.ch.flightData[0].size();
         int aircraftTypes = ind.ch.allowedAircraft.size();
-
         for (int a = 0; a < aircraftTypes; ++a) {
             if (!ind.ch.allowedAircraft[a].allowed) 
             {
@@ -449,17 +511,19 @@ namespace GP
                 }
             }
         }
-
-        for (int l = 0; l < flightLegs / 2; ++l) 
+        int allowedAircraftCount = std::accumulate(ind.ch.allowedAircraft.begin(), ind.ch.allowedAircraft.end(), 0,
+            [](int sum, const Aircraft& curr) { return sum + curr.allowed; });
+        for (int l = 0; l < flightLegs; ++l) 
         { 
             for (int w = 0; w < timeWindows; ++w) 
             {
-                repairReturnFlightFrequencies(ind, l, w);
+             
+                repairReturnFlightFrequencies(ind, flightsMap, l, w);
             }
         }
     }
 
-    void repairReturnFlightFrequencies(Individual& ind, int legIndex, int timeWindow)
+    void repairReturnFlightFrequencies(Individual& ind, const InstanceType& flightsMap, int legIndex, int timeWindow)
     {
         bool isReturnFlight = legIndex >= 10;
         int aircraftTypes = ind.ch.flightData[0][0].size();
@@ -470,24 +534,61 @@ namespace GP
             {
                 int correspondingOutboundLeg = legIndex - 10;
                 int previousTimeWindow = (timeWindow == 0) ? 27 : timeWindow - 1;
+                int nextDemand = findDemandPerTurn(ind, flightsMap, legIndex - 10, previousTimeWindow);
+                while (nextDemand == 0)
+                {
+                    previousTimeWindow = previousTimeWindow == 0 ? 27 : previousTimeWindow - 1;
+                    nextDemand = findDemandPerTurn(ind, flightsMap,legIndex - 10, previousTimeWindow);
+                }
                 int& outBoundFlightFrequency = ind.ch.flightData[correspondingOutboundLeg][previousTimeWindow][k].flightFrequency;
                 int& outBoundPassengers = ind.ch.flightData[correspondingOutboundLeg][previousTimeWindow][k].passengerNumber;
                 outBoundFlightFrequency = ind.ch.flightData[legIndex][timeWindow][k].flightFrequency;
                 if (outBoundPassengers == 0 && outBoundFlightFrequency > 0)
                 {
                     outBoundPassengers = ind.ch.flightData[legIndex][timeWindow][k].passengerNumber;
+                    if (nextDemand > 0)
+                    {
+                        outBoundPassengers = rand() % nextDemand +1 ;
+                        nextDemand -= outBoundPassengers;
+                    }
+                    /*if (demand == 0 && altered)
+                    {
+                        outBoundPassengers = 0;
+                        outBoundFlightFrequency = 0;
+                        ind.ch.flightData[legIndex][timeWindow][k].flightFrequency = 0;
+                        ind.ch.flightData[legIndex][timeWindow][k].passengerNumber = 0;
+                    }*/
                 }
             }
             else 
             {
                 int correspondingReturnLeg = legIndex + 10;
                 int nextTimeWindow = (timeWindow == 27) ? 0 : timeWindow + 1;
+                int nextDemand = findDemandPerTurn(ind, flightsMap, correspondingReturnLeg, nextTimeWindow);
+                while (nextDemand == 0)
+                {
+                    nextTimeWindow = nextTimeWindow == 27 ? 0 : nextTimeWindow + 1;
+                    nextDemand = findDemandPerTurn(ind, flightsMap, correspondingReturnLeg, nextTimeWindow);
+                }
+
                 int& returnFlightFrequency = ind.ch.flightData[correspondingReturnLeg][nextTimeWindow][k].flightFrequency;
                 int& returnFlightPassengers = ind.ch.flightData[correspondingReturnLeg][nextTimeWindow][k].passengerNumber;
                 returnFlightFrequency = ind.ch.flightData[legIndex][timeWindow][k].flightFrequency;
                 if (returnFlightPassengers == 0 && returnFlightFrequency > 0)
                 {
                     returnFlightPassengers = ind.ch.flightData[legIndex][timeWindow][k].passengerNumber;
+                    if (nextDemand > 0)
+                    {
+                        returnFlightPassengers = rand() % nextDemand + 1 ;
+                        nextDemand -= returnFlightPassengers;
+                    }
+                   /* if (demand == 0 && altered)
+                    {
+                        returnFlightFrequency = 0;
+                        returnFlightPassengers = 0;
+                        ind.ch.flightData[legIndex][timeWindow][k].flightFrequency = 0;
+                        ind.ch.flightData[legIndex][timeWindow][k].passengerNumber = 0;
+                    }*/
                 }
             }
         }
@@ -523,8 +624,8 @@ namespace GP
                 int newPax = currentPax + finalDelta;
 
                 if (newPax <= 0) {
-                    passengerNumRef = 0;
-                    frequencyRef = 0;
+                    passengerNumRef = currentPax;
+                    frequencyRef = frequencyRef;
                 }
                 else {
                     passengerNumRef = newPax;
@@ -533,13 +634,13 @@ namespace GP
                     frequencyRef = newFreq;
                 }
 
-                repairReturnFlightFrequencies(ind, l, w);
+                repairReturnFlightFrequencies(ind, flightsMap, l, w);
                 return;
             }
         }
     }
 
-    void mutateRemoveFlight(Individual& ind)
+    void mutateRemoveFlight(Individual& ind, const InstanceType& flightsMap)
     {
         int flightLegs = ind.ch.flightData.size();
         int timeWindows = ind.ch.flightData[0].size();
@@ -553,7 +654,7 @@ namespace GP
             if (ind.ch.flightData[l][w][a].passengerNumber > 0) {
                 ind.ch.flightData[l][w][a].passengerNumber = 0;
                 ind.ch.flightData[l][w][a].flightFrequency = 0;
-                repairReturnFlightFrequencies(ind, l, w);
+                repairReturnFlightFrequencies(ind,flightsMap, l, w);
                 return;
             }
         }
@@ -601,14 +702,64 @@ namespace GP
                     ind.ch.flightData[l][w][a].passengerNumber = passengersToAdd;
                     ind.ch.flightData[l][w][a].flightFrequency = frequency;
 
-                    repairReturnFlightFrequencies(ind, l, w);
+                    repairReturnFlightFrequencies(ind, flightsMap, l, w);
                     return;
                 }
             }
         }
+    }    
+    void mutateAddDestination(Individual& ind, const InstanceType& instance, const StringMatrix& aircrafts, const InstanceType& flightsMap)
+    {
+        int flightLegs = ind.ch.flightData.size();
+        int timeWindows = ind.ch.flightData[0].size();
+
+        for (int i = 0; i < 20; ++i) 
+        { 
+            int l = rand() % flightLegs;
+            
+            for(size_t w = 0; w < ind.ch.flightData[l].size(); w++)
+            { 
+                StringMatrix flight = (l < 10) ? flightsMap[l] : flightsMap[l - 10];
+                int demand = std::stoi(flight[w][1]);
+                for (size_t a = 0; a < ind.ch.flightData[l][w].size(); a++)
+                {
+                    if (ind.ch.flightData[l][w][a].passengerNumber > 0)
+                    {
+                        demand -= ind.ch.flightData[l][w][a].passengerNumber;
+                    }
+                }
+                if (demand > 0) {
+                    std::vector<int> allowedIndices;
+                    for (int k = 0; k < ind.ch.allowedAircraft.size(); ++k) 
+                    {
+                        if (ind.ch.allowedAircraft[k].allowed) allowedIndices.push_back(k);
+                    }
+
+                    if (allowedIndices.empty()) return;
+
+                    int aIndex = rand() % allowedIndices.size();
+                    int a = allowedIndices[aIndex];
+                    if (ind.ch.flightData[l][w][a].passengerNumber > 0)
+                    {
+                        continue;
+                    }
+                    int passengersToAdd = 1 + (rand() % demand);
+                    int capacity = std::stoi(aircrafts[a][ASSENTOS]);
+                    
+                    int frequency = (passengersToAdd + capacity - 1) / capacity;
+
+                    ind.ch.flightData[l][w][a].passengerNumber = passengersToAdd;
+                    ind.ch.flightData[l][w][a].flightFrequency = frequency;
+
+                    repairReturnFlightFrequencies(ind, flightsMap, l, w);
+                }
+            }
+            return;
+            
+        }
     }
 
-    void mutateSwapAircraft(Individual& ind, const StringMatrix& aircrafts)
+    void mutateSwapAircraft(Individual& ind, const StringMatrix& aircrafts, const InstanceType& flightsMap)
     {
         int flightLegs = ind.ch.flightData.size();
         int timeWindows = ind.ch.flightData[0].size();
@@ -650,7 +801,7 @@ namespace GP
                
                 frequencyTo = (passengerNumTo + capacityTo - 1) / capacityTo;
 
-                repairReturnFlightFrequencies(ind, l, w);
+                repairReturnFlightFrequencies(ind, flightsMap, l, w);
                 return;
             }
         }
@@ -661,17 +812,12 @@ namespace GP
         StringVector aircraft = aircrafts[flippedAircraft];
         int allowedAircraftCount = std::accumulate(ind.ch.allowedAircraft.begin(), ind.ch.allowedAircraft.end(), 0,
             [](int sum, const Aircraft& curr) { return sum + curr.allowed; });
-        for (int i = 0; i < ind.ch.flightData.size(); i++)
+        for (int i = 0; i < ind.ch.flightData.size() / 2; i++)
         {
             StringMatrix flight;
-            if (i >= 10)
-            {
-                flight = flightsMap[i - 10];
-            }
-            else
-            {
-                flight = flightsMap[i];
-            }
+            
+            flight = flightsMap[i];
+            
             for (int j = 0; j < ind.ch.flightData[i].size(); j++)
             {
                 StringVector flightTurn = flight[j];
@@ -726,21 +872,26 @@ namespace GP
                     demand = remainingDemand;
                 }
 
-                if (i >= 10)
+                int nextTurn = j == 27 ? 0 : j + 1;
+                int nextDemand = findDemandPerTurn(ind, flightsMap, i + 10, nextTurn);
+                while (nextDemand == 0)
                 {
-                    int previousTurn = j == 0 ? 27 : j - 1;
-
-                    flightFrequency = ind.ch.flightData[i - 10][previousTurn][flippedAircraft].flightFrequency;
-                    int capacityMisMatch = (passengerNumber + maxSeatCapacity - 1) / maxSeatCapacity;
-                    if (capacityMisMatch > flightFrequency)
-                    {
-                        flightFrequency = capacityMisMatch;
-                        ind.ch.flightData[i - 10][previousTurn][flippedAircraft].flightFrequency = capacityMisMatch;
-                    }
+                    nextTurn = nextTurn == 27 ? 0 : nextTurn + 1;
+                    nextDemand = findDemandPerTurn(ind, flightsMap, i + 10, nextTurn);
                 }
-                else
+
+                int& nextFrequency = ind.ch.flightData[i + 10][nextTurn][flippedAircraft].flightFrequency;
+                int& nextPassenger = ind.ch.flightData[i + 10][nextTurn][flippedAircraft].passengerNumber;
+                nextFrequency = flightFrequency;
+                if(nextPassenger == 0)
+                { 
+                    nextPassenger = rand() % nextDemand;
+                }
+                int capacityMismatch = (nextPassenger + maxSeatCapacity - 1) / maxSeatCapacity;
+                if (capacityMismatch > nextFrequency)
                 {
-                    flightFrequency = (passengerNumber + maxSeatCapacity - 1) / maxSeatCapacity;
+                    nextFrequency = capacityMismatch;
+                    flightFrequency = capacityMismatch;
                 }
                 
             }
@@ -794,18 +945,24 @@ namespace GP
         {
             // unflip until its fixed
             int unflip = 0;
-            do
-            { 
-                unflip = rand() % aircraftTypes;
-            } while ((unflip == aToFlip) || (!ind.ch.allowedAircraft[unflip].allowed));
-
+            std::vector<int> availableToUnflip;
+            for (int a = 0; a < aircraftTypes; a++)
+            {
+                if (ind.ch.allowedAircraft[a].allowed && a != aToFlip)
+                {
+                    availableToUnflip.push_back(a);
+                }
+            }
+             
+            unflip = availableToUnflip[rand() % availableToUnflip.size()];
+            
             ind.ch.allowedAircraft[unflip].allowed = !ind.ch.allowedAircraft[unflip].allowed;
 
             allowedAircraftCount = std::accumulate(ind.ch.allowedAircraft.begin(), ind.ch.allowedAircraft.end(), 0,
                 [](int sum, const Aircraft& curr) { return sum + curr.allowed; });
         }
         fixFlippedAircraft(ind, aToFlip, aircrafts, flightsMap);
-        repairIndividual(ind);
+        repairIndividual(ind, flightsMap);
     }
     void mutateHillClimb(Individual& ind, const InstanceType& instance, const StringMatrix& aircrafts, const InstanceType& flightsMap,
         const StringMatrix& passagem, const StringMatrix& cask)
@@ -823,9 +980,10 @@ namespace GP
     void mutate(Individual& ind, const InstanceType& instance, const StringMatrix& aircrafts, const InstanceType& flightsMap, const StringMatrix& passagem, const StringMatrix& cask)
     {
         //double pHillClimb = 0.60; 
-        double pAdjustPassengers = 0.50;
-        double pAddFlight = 0.25;
+        double pAdjustPassengers = 0.30;
+        double pAddFlight = 0.45;
         double pFlipAircraftType = 0.15;
+        //double pAddDestination = 0.15;
         double pRemoveFlight = 0.05;
         double pSwapAircraft = 0.05;
 
@@ -834,20 +992,21 @@ namespace GP
         {
             mutateHillClimb(ind, instance, aircrafts, flightsMap, passagem, cask);
         }*/
-        if (r < pAdjustPassengers) {
-            mutateAdjustPassengers(ind, instance, aircrafts, flightsMap);
-        }
-        else if (r < pAddFlight + pAdjustPassengers) {
+        if (r < pAddFlight) {
             mutateAddFlight(ind, instance, aircrafts, flightsMap);
         }
+        else if (r < pAddFlight + pAdjustPassengers) {
+            mutateAdjustPassengers(ind, instance, aircrafts, flightsMap);
+        }
         else if (r < pAddFlight + pFlipAircraftType + pAdjustPassengers) {
-            mutateFlipAircraftType(ind, aircrafts, flightsMap);
+            mutateAddDestination(ind, instance, aircrafts, flightsMap);
+            //mutateFlipAircraftType(ind, aircrafts, flightsMap);
         }
         else if (r < pAddFlight + pRemoveFlight + pAdjustPassengers + pSwapAircraft) {
-            mutateRemoveFlight(ind);
+            mutateRemoveFlight(ind, flightsMap);
         }
         else {
-            mutateSwapAircraft(ind, aircrafts);
+            mutateSwapAircraft(ind, aircrafts, flightsMap);
         }
 
     }
@@ -883,25 +1042,33 @@ namespace GP
             } while (firstParentIdx == secondParentIdx);
             Individual fstMate = pop[firstParentIdx];
             Individual sndMate = pop[secondParentIdx];
-
+    
             auto childPair = crossover(fstMate, sndMate, aircrafts, flightLegs);
             Individual fstChild = childPair.first;
             Individual sndChild = childPair.second;
-
+ 
             mutate(fstChild, instance, aircrafts, flightLegs, passagem, cask);
             mutate(sndChild, instance, aircrafts, flightLegs, passagem, cask);
-
+    
             evaluateIndividual(fstChild, instance, passagem, cask, flightLegs);
             evaluateIndividual(sndChild, instance, passagem, cask, flightLegs);
-
-
-            pop[populationSize - 1] = fstChild;
-            pop[populationSize - 2] = sndChild;
+            //evaluateIndividual(*best, instance, passagem, cask, flightLegs);
+            
+            if (fstChild.fitness > pop[populationSize - 1].fitness)
+            {
+                pop[populationSize - 1] = fstChild;
+            }
+            if (sndChild.fitness > pop[populationSize - 2].fitness)
+            {
+                pop[populationSize - 2] = sndChild;
+               
+            }
 
             std::sort(std::execution::par_unseq, pop.begin(), pop.end(), [](const Individual& a, const Individual& b) {return a.fitness > b.fitness;});
 
             if (pop[0].fitness > best.fitness) {
                 best = pop[0];
+ 
             }
 
             std::cout << "Gen: " << i
@@ -909,11 +1076,56 @@ namespace GP
                 << " Current Best: " << pop[0].fitness
                 << " Worst: " << pop[populationSize - 1].fitness << std::endl;
         }
-
-        std::cout << "Best fitness: " << best.fitness << std::endl;
+        //fixConstraintViolations(best, instance, aircrafts, flightLegs);
         return best;
-    }
+    }  
 
+    void fixConstraintViolations(Individual& ind, const InstanceType& instance, const StringMatrix& aircrafts, const InstanceType& flightsMap)
+    {
+        int flightLegs = ind.ch.flightData.size();
+        int timeWindows = ind.ch.flightData[0].size();
+        int aircraftNum = ind.ch.flightData[0][0].size();
+        for (int l = 0; l < flightLegs; l++)
+        {
+            StringMatrix flights;
+            
+            flights = flightsMap[l];
+            
+            for (int w = 0; w < ind.ch.flightData[l].size(); w++)
+            {
+                int demand = std::stoi(flights[w][1]);
+                for (int a = 0; a < aircraftNum; a++)
+                {
+                    if (!ind.ch.allowedAircraft[a].allowed) continue;
+                    int& passengerNumber = ind.ch.flightData[l][w][a].passengerNumber;
+                    int& flightFrequency = ind.ch.flightData[l][w][a].flightFrequency;
+                    if (passengerNumber == 0)
+                    {
+                        continue;
+                    }
+                    if (demand == 0 && passengerNumber > 0)
+                    {
+                        passengerNumber = 0;
+                        flightFrequency = 0;
+                    }
+                    int remainingDemand = 0;
+                    if(demand > 0)
+                    { 
+                       remainingDemand = demand - passengerNumber;
+                    }
+                    if (remainingDemand < 0)
+                    {
+                        passengerNumber = demand;
+                        demand = 0;
+                    }
+                    else
+                    {
+                        demand = remainingDemand;
+                    }
+                }
+            }
+        }
+    };
 }
 
 namespace util
