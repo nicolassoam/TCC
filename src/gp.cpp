@@ -386,14 +386,12 @@ namespace util
         {
             file << "Flight;Turn;Aircraft;Frequency;Passengers (" << ind.fitness << ")\n";
             for (const auto& op : all_flight_legs) {
-                // Look up details for this operation
                 const Route& route = routes[op.route_id];
                 const AircraftType& aircraft = aircraftTypes[op.aircraft_type_id];
 
                 std::string od_pair = route.origin_icao + route.destination_icao;
                 std::string turn_string = days.at(op.time_window);
 
-                // Write the data row
                 file << od_pair << ";"
                     << turn_string << ";"
                     << aircraft.name << ";"
