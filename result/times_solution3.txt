@@ -21,3 +21,4 @@ Time(s)(GPU) :747.701
 Time(s)(GPU) :747.8
 Average Time per Solution(s) (GPU): 747.75
 Average Population Transfer Time(s): 0.00150939
+

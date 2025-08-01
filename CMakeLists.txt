@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 enable_language(CUDA)
-find_package(CUDAToolkit REQUIRED)
-
+IF(NOT UNIX)
+	find_package(CUDAToolkit REQUIRED)
+ENDIF()
 project(TCC_FRQ)
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr")
 set(CMAKE_CXX_STANDARD 17)

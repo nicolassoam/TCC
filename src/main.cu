@@ -31,7 +31,7 @@ int main()
     std::vector<Individual> bestIndividuals;
     std::vector<double> timesToFinish;
     std::chrono::duration<double> elapsed;
-    int generations = 7500;
+    int generations = 7000;
 #ifdef GPU_ON
     std::vector<double> elapsedTransferTimes;
     GPU::DeviceDataManager deviceData;
