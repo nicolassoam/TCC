@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include "util.h"
+#include <cuda/std/utility>
 #include <cooperative_groups.h>
 
 namespace GPU
