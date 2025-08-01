@@ -23,7 +23,7 @@ namespace GP
     void mutateAdjustPassengers(Individual& individual, const std::vector<Route>& routes, const std::vector<AircraftType>& aircraftTypes);
     void repair(Individual& child, std::vector<Route> routes, std::vector<AircraftType> aircraftTypes);
     Individual search(std::vector<Route> routes, std::vector<AircraftType> aircraftTypes, int generations,
-        int populationSize, GPU::DeviceDataManager deviceData = GPU::DeviceDataManager(), std::vector<double>& elapsedTransferTimes = std::vector<double>());
+        int populationSize, GPU::DeviceDataManager deviceData = GPU::DeviceDataManager());
     std::map<std::pair<int, int>, int> getServedDemand(const Individual& individual);
     std::map<int, int> getTotalFleetRequired(const Individual& individual);
     int calculateRequiredFleetSize(const Individual& individual, int aircraftTypeId);
@@ -32,6 +32,6 @@ namespace GP
 namespace util
 {
     void writeBestIndividual(Individual& ind, InstanceType flightLegs, InstanceType instance, std::vector<Route> routes, std::vector<AircraftType> aircraftType);
-    void writeSolutionTimes(std::vector<double>elapsedTimes, std::vector<double>& elapsedTransferTimes = std::vector<double>());
+    void writeSolutionTimes(std::vector<double>elapsedTimes);
 }
 #endif

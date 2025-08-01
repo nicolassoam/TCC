@@ -75,7 +75,7 @@ namespace GPU
     void cleanupDeviceData(DeviceDataManager& d_manager);
     void setupDevicePopulation(DevicePopulationManager& d_manager, const std::vector<Individual>& h_population);
     void cleanupDevicePopulation(DevicePopulationManager& d_manager);
-    void kernelCaller(DeviceDataManager deviceData, Population& population, int currentGen, std::vector<double>& elapsedTransferTimes);
+    void kernelCaller(DeviceDataManager deviceData, Population& population, int currentGen);
 
 
 }

@@ -33,7 +33,6 @@ int main()
     std::chrono::duration<double> elapsed;
     int generations = 7000;
 #ifdef GPU_ON
-    std::vector<double> elapsedTransferTimes;
     GPU::DeviceDataManager deviceData;
     GPU::setupDeviceData(deviceData, aircraftTypes, routes, TIME_WINDOWS);
 #endif
@@ -43,7 +42,7 @@ int main()
 #ifndef GPU_ON
         Individual individual = GP::search(routes, aircraftTypes, generations, POPULATION_SIZE);
 #else
-        Individual individual = GP::search(routes, aircraftTypes, generations, POPULATION_SIZE, deviceData, elapsedTransferTimes);
+        Individual individual = GP::search(routes, aircraftTypes, generations, POPULATION_SIZE, deviceData);
 #endif
         hClock endTime = std::chrono::high_resolution_clock::now();
         elapsed = endTime - startTime;
@@ -54,10 +53,7 @@ int main()
     std::sort(bestIndividuals.begin(), bestIndividuals.end(), [](Individual& a, Individual& b) {return a.fitness > b.fitness;});
 
     util::writeBestIndividual(bestIndividuals[0], flightLegs, instances, routes, aircraftTypes);
-#ifdef GPU_ON
-    util::writeSolutionTimes(timesToFinish, elapsedTransferTimes);
-#else
+
     util::writeSolutionTimes(timesToFinish);
-#endif
     return 0;
 }

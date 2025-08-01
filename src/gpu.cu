@@ -235,105 +235,13 @@ namespace GPU
         d_individuals[individual_idx].fitness = static_cast<float>(totalProfit);
     }
 
-    __global__ void evaluateFitnessReductionKernel(
-        // Population data
-        GPUIndividual* d_individuals,
-        GPUFlight* d_allFlights,
-        char* d_allAllowedAircraft,
-        int population_size,
 
-        // Static data
-        GPURoute* d_routes,
-        GPUAircraftType* d_aircraftTypes,
-        int numAircraftTypes,
-        int routeOffset,
-        int max_assigned_types)
-    {
-        // shared memory for partial sum
-        extern __shared__ double s_partials[];
-
-        int individual_idx = blockIdx.x;
-
-        if (individual_idx >= population_size) {
-            return;
-        }
-
-        GPUIndividual myIndMeta = d_individuals[individual_idx];
-        GPUFlight* mySchedule = d_allFlights + myIndMeta.scheduleOffset;
-        char* myAllowedMask = d_allAllowedAircraft + myIndMeta.allowedAircraftOffset;
-
-        double myThreadProfit = 0.0;
-
-        bool isValid = true;
-        if (threadIdx.x == 0) {
-            int allowedCount = 0;
-            for (int i = 0; i < numAircraftTypes; ++i) {
-                if (myAllowedMask[i]) allowedCount++;
-            }
-            if (allowedCount == 0 || allowedCount > max_assigned_types) {
-                isValid = false;
-            }
-        }
-        __syncthreads();
-        if (!isValid) {
-            if (threadIdx.x == 0) {
-                d_individuals[individual_idx].fitness = -1.0e18f;
-            }
-            return;
-        }
-
-        for (int i = threadIdx.x; i < myIndMeta.scheduleSize; i += blockDim.x) 
-        {
-            GPUFlight flight = mySchedule[i];
-
-            int returnRouteId = flight.outboundRouteId + routeOffset;
-            const GPURoute& routeOut = d_routes[flight.outboundRouteId];
-            const GPURoute& routeIn = d_routes[returnRouteId];
-            const GPUAircraftType& aircraft = d_aircraftTypes[flight.aircraftTypeId];
-            double priceOut = routeOut.ticketPrices[aircraft.id];
-            double priceIn = routeIn.ticketPrices[aircraft.id];
-            double caskOut = routeOut.caskValues[aircraft.id];
-            double caskIn = routeIn.caskValues[aircraft.id];
-            double outboundRevenue = flight.outboundPassengersPerFlight * priceOut;
-            double returnRevenue = flight.returnPassengersPerFlight * priceIn;
-            double outboundCost = routeOut.distanceKM * aircraft.capacity * caskOut;
-            double returnCost = routeIn.distanceKM * aircraft.capacity * caskIn;
-            double profitPerTrip = (outboundRevenue + returnRevenue) - (outboundCost + returnCost);
-            myThreadProfit += profitPerTrip * flight.frequency;
-        }
-
-        s_partials[threadIdx.x] = myThreadProfit;
-
-
-        __syncthreads();
-
-        // The reduction loop. We use a standard power-of-2 reduction.
-        // This assumes blockDim.x is a power of 2 (e.g., 256, 512).
-        for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
-            // Only the first 's' threads are active in this iteration
-            if (threadIdx.x < s) {
-                s_partials[threadIdx.x] += s_partials[threadIdx.x + s];
-            }
-            __syncthreads();
-        }
-
-        if (threadIdx.x == 0) {
-            d_individuals[individual_idx].fitness = static_cast<float>(s_partials[0]);
-        }
-    }
-
-    void kernelCaller(DeviceDataManager deviceData, Population& population, int currentGen, std::vector<double>& elapsedTransferTimes)
+    void kernelCaller(DeviceDataManager deviceData, Population& population, int currentGen)
     {
         DevicePopulationManager devicePopulationManager;
         std::chrono::duration<double> elapsed;
 
-        hClock startTime = std::chrono::high_resolution_clock::now();
-
         setupDevicePopulation(devicePopulationManager, population);
-
-        hClock endTime = std::chrono::high_resolution_clock::now();
-
-        elapsed = endTime - startTime;
 
         int threadsPerBlock = 128;
         cudaDeviceProp props;
@@ -362,7 +270,6 @@ namespace GPU
         std::vector<GPUIndividual> h_gpuIndividualsResult(devicePopulationManager.population_size);
 
         // Perform the copy from Device memory to Host memory
-        startTime = std::chrono::high_resolution_clock::now();
 
         cudaCheck(cudaMemcpy(
             h_gpuIndividualsResult.data(),                 
@@ -375,9 +282,7 @@ namespace GPU
         {
             population[i].fitness = h_gpuIndividualsResult[i].fitness;
         }
-        endTime = std::chrono::high_resolution_clock::now();
-        elapsed += endTime - startTime;
-        elapsedTransferTimes.push_back(elapsed.count());
+
         //cleanupDeviceData(deviceData);
         cleanupDevicePopulation(devicePopulationManager);
     };

@@ -360,7 +360,7 @@ namespace GP
 
 #pragma region MAIN
     Individual search(std::vector<Route> routes, std::vector<AircraftType> aircraftTypes, 
-        int generations, int populationSize, GPU::DeviceDataManager deviceData, std::vector<double>& elapsedTransferTimes)
+        int generations, int populationSize, GPU::DeviceDataManager deviceData)
     {
         Population pop = initializePopulation(routes, aircraftTypes);
 
@@ -400,7 +400,7 @@ namespace GP
 #ifndef GPU_ON
             for (auto& ind : newPopulation) { evaluateIndividual(ind,routes, aircraftTypes); }
 #else
-            GPU::kernelCaller(deviceData, newPopulation, gen, elapsedTransferTimes);
+            GPU::kernelCaller(deviceData, newPopulation, gen);
 #endif
             pop = newPopulation;
             auto bestCurrent = *std::max_element(pop.begin(), pop.end(),
@@ -437,15 +437,10 @@ namespace util
         }
         return fdayShift;
     }
-    void writeSolutionTimes(std::vector<double>elapsedTimes, std::vector<double>& elapsedTransferTimes)
+    void writeSolutionTimes(std::vector<double>elapsedTimes)
     {
         std::ofstream file(String(RESULT) + "/times_solution" + std::to_string(MAX_ASSIGNED_TYPES) + ".txt", std::ios_base::app);
         double avgTime = 0;
-#ifdef GPU_ON
-        double avgTransferTime = 0;
-        for (double time : elapsedTransferTimes) avgTransferTime += time;
-        avgTransferTime = avgTransferTime / elapsedTransferTimes.size();
-#endif
 
         if (file.is_open())
         {
@@ -461,7 +456,6 @@ namespace util
             avgTime = avgTime / elapsedTimes.size();
 #ifdef GPU_ON
             file << "Average Time per Solution(s) (GPU): " << avgTime << std::endl;
-            file << "Average Population Transfer Time(s): " << avgTransferTime << std::endl;
 #else
             file << "Average Time per Solution(s): " << avgTime << std::endl;
 #endif

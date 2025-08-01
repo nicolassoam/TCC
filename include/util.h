@@ -16,7 +16,7 @@
 #include "config.h"
 #include <chrono>
 
-#define MAX_ASSIGNED_TYPES 3
+#define MAX_ASSIGNED_TYPES 5
 #define TIME_WINDOWS 28
 #define HUB 0
 #define POPULATION_SIZE 128
