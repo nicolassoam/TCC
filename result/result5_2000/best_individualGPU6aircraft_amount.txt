@@ -1,0 +1,5 @@
+ Aircraft Type 'E190-E2': 15 planes
+ Aircraft Type 'E195-E2': 1 planes
+ Aircraft Type 'A220-100': 9 planes
+ Aircraft Type 'A220-300': 1 planes
+ Aircraft Type 'B737-M7': 2 planes

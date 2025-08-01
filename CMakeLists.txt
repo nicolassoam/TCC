@@ -19,6 +19,7 @@ add_executable(main "src/main.cu")
 
 target_sources(main PRIVATE "util/util.cpp")
 target_sources(main PRIVATE "src/gp.cpp")
+target_sources(main PRIVATE "src/gpu.cu")
 target_include_directories(main PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 set_target_properties(main PROPERTIES CUDA_ARCHITECTURES "89")
 

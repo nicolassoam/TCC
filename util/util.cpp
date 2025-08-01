@@ -46,7 +46,7 @@ namespace util
             air.id = a;
             air.name = aircraft[Aeronave::FROTA];
             air.capacity = std::stod(aircraft[ASSENTOS]);
-            air.range_km = std::stod(aircraft[ALCANCE]);
+            air.rangeKM = std::stod(aircraft[ALCANCE]);
             aircraftTypes.push_back(air);
         }
         return aircraftTypes;
@@ -62,20 +62,20 @@ namespace util
             r.id = l;
             if (l < 10)
             {
-                r.origin_id = 0;
-                r.destination_id = l;
+                r.originId = 0;
+                r.destinationId = l;
             }
             else
             {
-                r.origin_id = l - 10;
-                r.destination_id = 0;
+                r.originId = l - 10;
+                r.destinationId = 0;
             }
-            r.distance_km = std::stod(flightData[l][0][2]);
-            r.origin_icao = flightData[l][0][4];
-            r.destination_icao = flightData[l][0][5];
+            r.distanceKM = std::stod(flightData[l][0][2]);
+            r.originIcao = flightData[l][0][4];
+            r.destinationIcao = flightData[l][0][5];
             for (int w = 0; w < flight.size(); w++)
             {   
-                r.demand_per_window.push_back(std::stoi(flightData[l][w][1]));
+                r.demandPerWindow.push_back(std::stoi(flightData[l][w][1]));
             }
             std::vector<String> price;
             std::vector<String> caskValues;
@@ -91,8 +91,8 @@ namespace util
             }
             for (int a = 0; a < 7; a++)
             {
-                r.ticket_prices.insert({ a, std::stod(price[a]) });
-                r.cask_values.insert({ a, std::stod(caskValues[a]) });
+                r.ticketPrices.insert({ a, std::stod(price[a]) });
+                r.caskValues.insert({ a, std::stod(caskValues[a]) });
             }
             routes.push_back(r);
         }
