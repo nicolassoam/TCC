@@ -1,0 +1,11 @@
+Time(s) :32.7331
+Time(s) :32.7226
+Time(s) :32.758
+Time(s) :33.0122
+Time(s) :33.2768
+Time(s) :34.2465
+Time(s) :34.1589
+Time(s) :33.8625
+Time(s) :33.3021
+Time(s) :33.4537
+Average Time per Solution(s): 33.3526

@@ -12,7 +12,6 @@ namespace util
 
         res.resize(cols, U(rows));
 
-        // Fill res with transposed values of mat
         for (int i = 0; i < rows; i++)
         {
             for (int j = 0; j < cols; j++)
@@ -34,6 +33,69 @@ namespace util
         std::sort(v.begin(), v.end(), [](String &a, const String &b)
                   { return a < b; });
         return v;
+    }
+
+    std::vector<AircraftType> readAicrafts(StringMatrix aircrafts)
+    {
+        std::vector<AircraftType>aircraftTypes;
+        for (int a = 0; a < aircrafts.size(); a++)
+        {
+            StringVector aircraft = aircrafts[a];
+            AircraftType air;
+            air.id = a;
+            air.name = aircraft[Aeronave::FROTA];
+            air.capacity = std::stod(aircraft[ASSENTOS]);
+            air.rangeKM = std::stod(aircraft[ALCANCE]);
+            aircraftTypes.push_back(air);
+        }
+        return aircraftTypes;
+    }
+
+    std::vector<Route> readRoute(StringMatrix prices, StringMatrix cask, InstanceType flightData)
+    {
+        std::vector<Route> routes;
+        for (int l = 0; l < flightData.size(); l++)
+        {
+            StringMatrix flight = flightData[l];
+            Route r;
+            r.id = l;
+            if (l < 10)
+            {
+                r.originId = 0;
+                r.destinationId = l;
+            }
+            else
+            {
+                r.originId = l - 10;
+                r.destinationId = 0;
+            }
+            r.distanceKM = std::stod(flightData[l][0][2]);
+            r.originIcao = flightData[l][0][4];
+            r.destinationIcao = flightData[l][0][5];
+            for (int w = 0; w < flight.size(); w++)
+            {   
+                r.demandPerWindow.push_back(std::stoi(flightData[l][w][1]));
+            }
+            std::vector<String> price;
+            std::vector<String> caskValues;
+            if (l < 10)
+            {
+                price = prices[l];
+                caskValues = cask[l];
+            }
+            else
+            {
+                price = prices[l - 10];
+                caskValues = cask[l - 10];
+            }
+            for (int a = 0; a < 7; a++)
+            {
+                r.ticketPrices.insert({ a , std::stod(price[a]) });
+                r.caskValues.insert({ a, std::stod(caskValues[a])});
+            }
+            routes.push_back(r);
+        }
+        return routes;
     }
 
     StringMatrix mapDestinationToAircraftTicketPrice(StringMatrix &dataMatrix, StringMatrix &flightMatrix)
@@ -124,6 +186,8 @@ namespace util
                     flightLeg.push_back(flightLegData[Rotas2_3::DEMANDA]);
                     flightLeg.push_back(flightLegData[Rotas2_3::DISTANCIA]);
                     flightLeg.push_back(flightLegData[Rotas2_3::OD]);
+                    flightLeg.push_back(flightLegData[Rotas2_3::ORIGEM]);
+                    flightLeg.push_back(flightLegData[Rotas2_3::DESTINO]);
                     flightData.push_back(flightLeg);
                     
                 }
@@ -161,6 +225,8 @@ namespace util
                     flightLeg.push_back(flightLegData[Rotas2_3::DEMANDA]);
                     flightLeg.push_back(flightLegData[Rotas2_3::DISTANCIA]);
                     flightLeg.push_back(flightLegData[Rotas2_3::OD]);
+                    flightLeg.push_back(flightLegData[Rotas2_3::ORIGEM]);
+                    flightLeg.push_back(flightLegData[Rotas2_3::DESTINO]);
                     flightData.push_back(flightLeg);
                     
                 }
@@ -240,8 +306,6 @@ namespace util
         /* ROTAS2 */
         String rotas2Path = instances[ROTAS2];
         StringMatrix rotas2 = readFile(rotas2Path, false);
-        /*for (auto j : instances)
-            std::cout << j << std::endl;*/
         instanceMatrix.push_back(aeronave);
         instanceMatrix.push_back(cask);
         instanceMatrix.push_back(passagem);

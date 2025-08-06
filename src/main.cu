@@ -3,27 +3,50 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include "gpu.cuh"
 
 int main()
 {
-     
     InstanceType instances = util::loadInstance();
     StringMatrix cask = util::cask(instances);
     StringMatrix flightData = util::rotas2(instances);
     StringMatrix passagem = util::passagem(instances);
     std::vector<Flight> flights;
+    std::vector<Route> routes;
+    std::vector<AircraftType> aircraftTypes;
     StringMatrix prices = util::mapDestinationToAircraftTicketPrice(passagem, flightData);
     StringMatrix caskValues = util::mapDestinationToAircraftTicketPrice(cask, flightData);
+    StringMatrix aircrafts = util::aeronave(instances);
     InstanceType flightLegs = util::FlightLegs(flightData, passagem);
-    srand(10);
-    std::cout << "Flight legs size: " << flightLegs.size() << std::endl;  
+    routes = util::readRoute(prices, caskValues, flightLegs);
+    aircraftTypes = util::readAicrafts(aircrafts);
     std::vector<Individual> bestIndividuals;
-    for (int i = 0; i < 1; i++)
+    std::vector<double> timesToFinish;
+    std::chrono::duration<double> elapsed;
+    int generations = 2000;
+
+#ifdef GPU_ON
+    GPU::DeviceDataManager deviceData;
+    GPU::setupDeviceData(deviceData, aircraftTypes, routes, TIME_WINDOWS);
+#endif
+    for (int i = 0; i < 10; i++)
     {
-        Individual individual = GP::search(flightLegs, caskValues, prices, instances, 2000, POPULATION_SIZE);
+        hClock startTime = std::chrono::high_resolution_clock::now();
+#ifndef GPU_ON
+        Individual individual = GP::search(routes, aircraftTypes, generations, POPULATION_SIZE);
+#else
+        Individual individual = GP::search(routes, aircraftTypes, generations, POPULATION_SIZE, deviceData);
+#endif
+        hClock endTime = std::chrono::high_resolution_clock::now();
+        elapsed = endTime - startTime;
         bestIndividuals.push_back(individual);
+        timesToFinish.push_back(elapsed.count());
     }
+    std::cout << elapsed.count() << std::endl;
     std::sort(bestIndividuals.begin(), bestIndividuals.end(), [](Individual& a, Individual& b) {return a.fitness > b.fitness;});
-    util::writeBestIndividual(bestIndividuals[0], flightLegs, instances);
+
+    util::writeBestIndividual(bestIndividuals[0], flightLegs, instances, routes, aircraftTypes);
+    util::writeFlightsPerDestination(bestIndividuals[0], routes);
+    util::writeSolutionTimes(timesToFinish);
     return 0;
 }

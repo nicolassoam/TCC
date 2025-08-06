@@ -1,0 +1,11 @@
+Destination_ICAO;Total_Frequency
+SBCF;14
+SBCT;7
+SBCY;7
+SBGL;7
+SBGR;22
+SBKP;7
+SBPA;7
+SBPJ;7
+SBRJ;14
+SBSP;21
