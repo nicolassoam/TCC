@@ -4,9 +4,9 @@
 #include <vector>
 #include <string>
 #include "gpu.cuh"
+
 int main()
 {
-     
     InstanceType instances = util::loadInstance();
     StringMatrix cask = util::cask(instances);
     StringMatrix flightData = util::rotas2(instances);
@@ -20,23 +20,16 @@ int main()
     InstanceType flightLegs = util::FlightLegs(flightData, passagem);
     routes = util::readRoute(prices, caskValues, flightLegs);
     aircraftTypes = util::readAicrafts(aircrafts);
-    std::cout << "Origin :" << routes[0].originIcao << std::endl;
-    std::cout << "Destination :" << routes[0].destinationIcao << std::endl;
-    std::cout << "Demand in TER1 :" << routes[0].demandPerWindow[4] << std::endl;
-    std::cout << "Origin :" << routes[10].originIcao << std::endl;
-    std::cout << "Destination :" << routes[10].destinationIcao << std::endl;
-    std::cout << "Demand in TER3 :" << routes[10].demandPerWindow[6]<< std::endl;
-
-    std::cout << "Flight legs size: " << flightLegs.size() << std::endl;  
     std::vector<Individual> bestIndividuals;
     std::vector<double> timesToFinish;
     std::chrono::duration<double> elapsed;
-    int generations = 7000;
+    int generations = 2000;
+
 #ifdef GPU_ON
     GPU::DeviceDataManager deviceData;
     GPU::setupDeviceData(deviceData, aircraftTypes, routes, TIME_WINDOWS);
 #endif
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 10; i++)
     {
         hClock startTime = std::chrono::high_resolution_clock::now();
 #ifndef GPU_ON
@@ -53,7 +46,7 @@ int main()
     std::sort(bestIndividuals.begin(), bestIndividuals.end(), [](Individual& a, Individual& b) {return a.fitness > b.fitness;});
 
     util::writeBestIndividual(bestIndividuals[0], flightLegs, instances, routes, aircraftTypes);
-
+    util::writeFlightsPerDestination(bestIndividuals[0], routes);
     util::writeSolutionTimes(timesToFinish);
     return 0;
 }

@@ -1,0 +1,22 @@
+Time(s)(GPU) :27.9694
+Time(s)(GPU) :28.5531
+Time(s)(GPU) :28.619
+Time(s)(GPU) :28.4459
+Time(s)(GPU) :27.7239
+Time(s)(GPU) :28.1372
+Time(s)(GPU) :28.1891
+Time(s)(GPU) :28.2093
+Time(s)(GPU) :27.996
+Time(s)(GPU) :28.076
+Average Time per Solution(s) (GPU): 28.1919
+Time(s) :35.413
+Time(s) :34.5411
+Time(s) :34.9532
+Time(s) :35.0417
+Time(s) :34.8142
+Time(s) :35.8598
+Time(s) :34.9285
+Time(s) :34.4375
+Time(s) :34.7116
+Time(s) :34.176
+Average Time per Solution(s): 34.8877

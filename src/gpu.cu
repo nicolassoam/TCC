@@ -71,17 +71,9 @@ namespace GPU
 
             d_manager.totalFlights = h_allFlights.size();
 
-            // ========================================================================
-            // Part B: Allocate memory on the GPU for the flattened arrays
-            // ========================================================================
-
             cudaCheck(cudaMalloc(&d_manager.d_individuals, sizeof(GPUIndividual) * h_gpuIndividuals.size()));
             cudaCheck(cudaMalloc(&d_manager.d_allFlights, sizeof(GPUFlight) * h_allFlights.size()));
             cudaCheck(cudaMalloc(&d_manager.d_allAllowedAircraft, sizeof(char) * h_allAllowedAircraft.size()));
-
-            // ========================================================================
-            // Part C: Copy the flattened host vectors to the device
-            // ========================================================================
 
             cudaCheck(cudaMemcpy(d_manager.d_individuals, h_gpuIndividuals.data(), sizeof(GPUIndividual) * h_gpuIndividuals.size(), cudaMemcpyHostToDevice));
             cudaCheck(cudaMemcpy(d_manager.d_allFlights, h_allFlights.data(), sizeof(GPUFlight) * h_allFlights.size(), cudaMemcpyHostToDevice));
@@ -103,14 +95,12 @@ namespace GPU
 
         try {
 
-            // 1. Flatten AircraftType data
             std::vector<GPUAircraftType> h_gpuAircraftTypes;
             for (const auto& ac : h_aircraftTypes) 
             {
                 h_gpuAircraftTypes.push_back({ ac.id, ac.capacity, ac.rangeKM });
             }
 
-            // 2. Flatten all sub-arrays (prices, casks, demands) into single large vectors
             std::vector<double> h_allTicketPrices;
             std::vector<double> h_allCaskValues;
             std::vector<int>    h_allDemands;
@@ -123,10 +113,6 @@ namespace GPU
                 }
                 h_allDemands.insert(h_allDemands.end(), route.demandPerWindow.begin(), route.demandPerWindow.end());
             }
-
-            // ========================================================================
-            // Part B: Allocate memory on the GPU
-            // ========================================================================
 
             cudaCheck(cudaMalloc(&d_manager.d_aircraftTypes, sizeof(GPUAircraftType) * d_manager.numAircraftTypes));
             cudaCheck(cudaMalloc(&d_manager.d_routes, sizeof(GPURoute) * d_manager.numRoutes));
@@ -239,7 +225,6 @@ namespace GPU
     void kernelCaller(DeviceDataManager deviceData, Population& population, int currentGen)
     {
         DevicePopulationManager devicePopulationManager;
-        std::chrono::duration<double> elapsed;
 
         setupDevicePopulation(devicePopulationManager, population);
 
@@ -269,7 +254,6 @@ namespace GPU
         cudaCheck(cudaDeviceSynchronize());
         std::vector<GPUIndividual> h_gpuIndividualsResult(devicePopulationManager.population_size);
 
-        // Perform the copy from Device memory to Host memory
 
         cudaCheck(cudaMemcpy(
             h_gpuIndividualsResult.data(),                 
@@ -283,7 +267,6 @@ namespace GPU
             population[i].fitness = h_gpuIndividualsResult[i].fitness;
         }
 
-        //cleanupDeviceData(deviceData);
         cleanupDevicePopulation(devicePopulationManager);
     };
 }

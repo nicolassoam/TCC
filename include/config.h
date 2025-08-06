@@ -4,6 +4,6 @@
 #define DATA "C:/Users/Nicolas/Desktop/TCC/data"
 #define RESULT "C:/Users/Nicolas/Desktop/TCC/result"
 #define PROCESSED "C:/Users/Nicolas/Desktop/TCC/data/processed"
-#define GPU_ON "1"
+/* #undef GPU_ON */
 #define DEBUG "1"
 #endif

@@ -12,7 +12,6 @@ namespace util
 
         res.resize(cols, U(rows));
 
-        // Fill res with transposed values of mat
         for (int i = 0; i < rows; i++)
         {
             for (int j = 0; j < cols; j++)
@@ -91,8 +90,8 @@ namespace util
             }
             for (int a = 0; a < 7; a++)
             {
-                r.ticketPrices.insert({ a, std::stod(price[a]) });
-                r.caskValues.insert({ a, std::stod(caskValues[a]) });
+                r.ticketPrices.insert({ a , std::stod(price[a]) });
+                r.caskValues.insert({ a, std::stod(caskValues[a])});
             }
             routes.push_back(r);
         }
@@ -307,8 +306,6 @@ namespace util
         /* ROTAS2 */
         String rotas2Path = instances[ROTAS2];
         StringMatrix rotas2 = readFile(rotas2Path, false);
-        /*for (auto j : instances)
-            std::cout << j << std::endl;*/
         instanceMatrix.push_back(aeronave);
         instanceMatrix.push_back(cask);
         instanceMatrix.push_back(passagem);

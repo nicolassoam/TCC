@@ -1,0 +1,3 @@
+ Aircraft Type 'E190-E2': 8 planes
+ Aircraft Type 'A220-100': 3 planes
+ Aircraft Type 'ATR-72': 1 planes

@@ -1,23 +1,11 @@
-Time(s)(GPU) :206.847
-Time(s)(GPU) :198.964
-Time(s)(GPU) :204.9
-Time(s)(GPU) :205.52
-Time(s)(GPU) :201.846
-Average Time per Solution(s) (GPU): 203.615
-Average Population Transfer Time(s): 0.00156895
-Time(s) :247.211
-Time(s) :240.975
-Time(s) :252.168
-Time(s) :255.78
-Time(s) :250.491
-Average Time per Solution(s): 249.325
-Time(s)(GPU) :768.138
-Time(s)(GPU) :758.889
-Average Time per Solution(s) (GPU): 763.514
-Average Population Transfer Time(s): 0.00184893
-
-Time(s)(GPU) :771.854
-Time(s)(GPU) :766.133
-Time(s)(GPU) :744.878
-Average Time per Solution(s) (GPU): 760.955
-Average Population Transfer Time(s): 0.00162305
+Time(s) :32.7331
+Time(s) :32.7226
+Time(s) :32.758
+Time(s) :33.0122
+Time(s) :33.2768
+Time(s) :34.2465
+Time(s) :34.1589
+Time(s) :33.8625
+Time(s) :33.3021
+Time(s) :33.4537
+Average Time per Solution(s): 33.3526

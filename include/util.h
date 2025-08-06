@@ -16,15 +16,16 @@
 #include "config.h"
 #include <chrono>
 
-#define MAX_ASSIGNED_TYPES 5
+#define MAX_ASSIGNED_TYPES 1
 #define TIME_WINDOWS 28
+#define NUM_ROUTES 20
 #define HUB 0
 #define POPULATION_SIZE 128
 #define TOURNAMENT_SIZE 3
 #define AIRCRAFT_TYPES 7
 const float CR = 0.8;
 const float MR = 0.4;
-const int SEED = 10;
+const int SEED = 320;
 
 using String = std::string;
 using StringVector = std::vector<String>; 
@@ -45,8 +46,8 @@ struct Route {
     String originIcao;
     String destinationIcao;
     double distanceKM;
-    std::map<int, double> ticketPrices;
-    std::map<int, double> caskValues;
+    std::map<int,double> ticketPrices;
+    std::map<int,double> caskValues;
     std::vector<int> demandPerWindow;
 };
 

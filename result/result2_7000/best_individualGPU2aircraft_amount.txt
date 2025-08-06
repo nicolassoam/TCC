@@ -1,2 +1,0 @@
- Aircraft Type 'E190-E2': 18 planes
- Aircraft Type 'A220-100': 3 planes

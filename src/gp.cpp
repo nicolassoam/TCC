@@ -6,7 +6,7 @@ namespace GP
 {
     std::mt19937 rng(SEED);
 
-    int tournament(Population population, int k){
+    int tournament(const Population &population, int k){
         int bestIndex = rand() % POPULATION_SIZE;
         for(int i = 0; i < k; i++){
             int randomIndex = rand() % POPULATION_SIZE;
@@ -18,6 +18,15 @@ namespace GP
     }
 
 #pragma region AUXILIAR
+    void cleanupSchedule(Individual& individual) {
+        individual.schedule.erase(
+            std::remove_if(individual.schedule.begin(), individual.schedule.end(),
+                [](const Flight& trip) {
+                    return trip.outboundPassengersPerFlight == 0;
+                }),
+            individual.schedule.end()
+                    );
+    }
     std::map<int, int> getTotalFleetRequired(const Individual& individual) 
     {
         std::map<int, int> fleetMap;
@@ -42,7 +51,7 @@ namespace GP
             {
                 balanceChange[trip.outboundWindow] -= trip.frequency;
 
-                int arrivalWindow = (trip.returnWindow + 1) % TIME_WINDOWS;
+                int arrivalWindow = trip.returnWindow + 1 % TIME_WINDOWS;
                 balanceChange[arrivalWindow] += trip.frequency;
             }
         }
@@ -61,7 +70,7 @@ namespace GP
 
         return maxAircraftOutside;
     }
-    void repair(Individual& child, std::vector<Route> routes, std::vector<AircraftType> aircraftTypes) 
+    void repair(Individual& child, const std::vector<Route>& routes, const std::vector<AircraftType>& aircraftTypes) 
     {
         int allowedCount = std::accumulate(child.allowedAircraft.begin(), child.allowedAircraft.end(), 0);
         while (allowedCount > MAX_ASSIGNED_TYPES) {
@@ -83,9 +92,10 @@ namespace GP
 
         std::vector<Flight> repairedSchedule;
 
-        std::map<std::pair<int, int>, int> demandTracker;
-
         std::shuffle(child.schedule.begin(), child.schedule.end(), rng);
+
+        std::vector<int> demandTracker(routes.size() * TIME_WINDOWS, -1);
+
 
         for (const auto& trip : child.schedule) {
             int returnRouteId = trip.outboundRouteId + 10;
@@ -93,44 +103,51 @@ namespace GP
             int outDemandNeeded = trip.frequency * trip.outboundPassengersPerFlight;
             int retDemandNeeded = trip.frequency * trip.returnPassengersPerFlight;
 
-            int outDemandAvailable = routes[trip.outboundRouteId].demandPerWindow[trip.outboundWindow];
-            if (demandTracker.count({ trip.outboundRouteId, trip.outboundWindow })) {
-                outDemandAvailable = demandTracker.at({ trip.outboundRouteId, trip.outboundWindow });
+            int out_idx = trip.outboundRouteId * TIME_WINDOWS + trip.outboundWindow;
+            int ret_idx = returnRouteId * TIME_WINDOWS + trip.returnWindow;
+
+            if (demandTracker[out_idx] == -1) {
+                demandTracker[out_idx] = routes[trip.outboundRouteId].demandPerWindow[trip.outboundWindow];
             }
 
-            int retDemandAvailable = routes[returnRouteId].demandPerWindow[trip.returnWindow];
-            if (demandTracker.count({ returnRouteId, trip.returnWindow })) {
-                retDemandAvailable = demandTracker.at({ returnRouteId, trip.returnWindow });
+            if (demandTracker[ret_idx] == -1) {
+                demandTracker[ret_idx] = routes[returnRouteId].demandPerWindow[trip.returnWindow];
             }
+
+            int outDemandAvailable = demandTracker[out_idx];
+            int retDemandAvailable = demandTracker[ret_idx];
 
             if (outDemandAvailable >= outDemandNeeded && retDemandAvailable >= retDemandNeeded) {
                 repairedSchedule.push_back(trip);
-
-                demandTracker[{trip.outboundRouteId, trip.outboundWindow}] = outDemandAvailable - outDemandNeeded;
-                demandTracker[{returnRouteId, trip.returnWindow}] = retDemandAvailable - retDemandNeeded;
+                demandTracker[out_idx] -= outDemandNeeded;
+                demandTracker[ret_idx] -= retDemandNeeded;
             }
         }
 
         child.schedule = repairedSchedule;
     }
 
-    std::map<std::pair<int, int>, int> getServedDemand(const Individual& individual) {
-        std::map<std::pair<int, int>, int> servedDemand;
+    void getServedDemand(const Individual& individual, std::vector<int>& servedDemand) {
+        if (servedDemand.size() != NUM_ROUTES * TIME_WINDOWS) {
+            servedDemand.assign(NUM_ROUTES * TIME_WINDOWS, 0);
+        }
+        else {
+            std::fill(servedDemand.begin(), servedDemand.end(), 0);
+        }
 
         for (const auto& trip : individual.schedule) {
+            int outboundIndex = trip.outboundRouteId * TIME_WINDOWS + trip.outboundWindow;
+            servedDemand[outboundIndex] += trip.frequency * trip.outboundPassengersPerFlight;
+
             int returnRouteId = trip.outboundRouteId + 10;
-
-            servedDemand[{trip.outboundRouteId, trip.outboundWindow}] +=
-                trip.frequency * trip.outboundPassengersPerFlight;
-
-            servedDemand[{returnRouteId, trip.returnWindow}] +=
-                trip.frequency * trip.returnPassengersPerFlight;
+            int returnIndex = returnRouteId * TIME_WINDOWS + trip.returnWindow;
+            servedDemand[returnIndex] += trip.frequency * trip.returnPassengersPerFlight;
         }
-        return servedDemand;
+        return;
     }
 #pragma endregion
 
-    void evaluateIndividual(Individual& ind, std::vector<Route> routes, std::vector<AircraftType> aircraftTypes)
+    void evaluateIndividual(Individual& ind, const std::vector<Route>& routes, const std::vector<AircraftType>& aircraftTypes)
     {
         double sum = 0;
         int allowedCount = std::accumulate(ind.allowedAircraft.begin(), ind.allowedAircraft.end(), 0);
@@ -166,7 +183,7 @@ namespace GP
         ind.fitness = sum;
     }
 
-    Population initializePopulation(std::vector<Route> routes, std::vector<AircraftType> aircraftTypes)
+    Population initializePopulation(const std::vector<Route>& routes, const std::vector<AircraftType>& aircraftTypes)
     {
         Population pop(POPULATION_SIZE);
 
@@ -179,8 +196,9 @@ namespace GP
             for (int i = 0; i < numToAllow; ++i) {
                 individual.allowedAircraft[p[i]] = true;
             }
-
-            int initialOps = std::uniform_int_distribution<>(10, 40)(rng);
+            int minMutationAmount = 10;
+            int maxMutationAmount = 40;
+            int initialOps = std::uniform_int_distribution<>(minMutationAmount, maxMutationAmount)(rng);
             for (int i = 0; i < initialOps; ++i) { mutate(individual, routes, aircraftTypes); }
         }
 
@@ -188,7 +206,7 @@ namespace GP
     }
 
 #pragma region OPERATORS
-    void mutateAdjustPassengers(Individual& individual, const std::vector<Route>& routes, const std::vector<AircraftType>& aircraftTypes) 
+    void mutateAdjustPassengers(Individual& individual, const std::vector<Route>& routes, const std::vector<AircraftType>& aircraftTypes)
     {
         if (individual.schedule.empty()) {
             return;
@@ -196,27 +214,31 @@ namespace GP
 
         int trip_idx = std::uniform_int_distribution<>(0, individual.schedule.size() - 1)(rng);
         Flight& tripToModify = individual.schedule[trip_idx];
-
-        auto servedDemand = getServedDemand(individual);
+        std::vector<int> servedDemand;
+        getServedDemand(individual, servedDemand);
 
         const auto& aircraft = aircraftTypes[tripToModify.aircraftTypeId];
 
         int returnRouteId = tripToModify.outboundRouteId + 10;
         const auto& routeOut = routes[tripToModify.outboundRouteId];
         int totalDemandOut = routeOut.demandPerWindow[tripToModify.outboundWindow];
-        int servedDemandOut = servedDemand.at({ tripToModify.outboundRouteId, tripToModify.outboundWindow });
+        int outIndex = tripToModify.outboundRouteId * TIME_WINDOWS + tripToModify.outboundWindow;
+        int servedDemandOut = servedDemand[outIndex];
         int demandHeadroomOut = totalDemandOut - (servedDemandOut - tripToModify.frequency * tripToModify.outboundPassengersPerFlight);
 
         int maxPassengersOut = std::min(aircraft.capacity,
-            tripToModify.outboundPassengersPerFlight + (demandHeadroomOut / tripToModify.frequency));
+            demandHeadroomOut / tripToModify.frequency);
 
         const auto& routeIn = routes[returnRouteId];
         int totalDemandIn = routeIn.demandPerWindow[tripToModify.returnWindow];
-        int servedDemandIn = servedDemand.at({ returnRouteId, tripToModify.returnWindow });
+
+        int returnIndex = returnRouteId * TIME_WINDOWS + tripToModify.returnWindow;
+
+        int servedDemandIn = servedDemand[returnIndex];
         int demandHeadroomIn = totalDemandIn - (servedDemandIn - tripToModify.frequency * tripToModify.returnPassengersPerFlight);
 
         int maxPassengersIn = std::min(aircraft.capacity,
-            tripToModify.returnPassengersPerFlight + (demandHeadroomIn / tripToModify.frequency));
+           demandHeadroomIn / tripToModify.frequency);
 
         if (maxPassengersOut > tripToModify.outboundPassengersPerFlight) {
             tripToModify.outboundPassengersPerFlight = std::uniform_int_distribution<>(
@@ -228,7 +250,9 @@ namespace GP
                 tripToModify.returnPassengersPerFlight, maxPassengersIn)(rng);
         }
     }
-    void mutateAddRoute(Individual& individual, std::vector<Route> routes, std::vector<AircraftType> aircraftTypes)
+
+
+    void mutateAddRoute(Individual& individual, const std::vector<Route>& routes, const std::vector<AircraftType>& aircraftTypes)
     {
         // Add route in Schedule
         std::vector<int> allowedAc;
@@ -245,37 +269,37 @@ namespace GP
         if (aircraft.rangeKM < routeOut.distanceKM) return;
 
         int outWindow = std::uniform_int_distribution<>(0, TIME_WINDOWS - 1)(rng);
-        int returnOffset = 1;
-        if (outWindow == 27)
-        {
-            returnOffset = -outWindow;
-        }
-        int retWindow = std::uniform_int_distribution<>(outWindow + returnOffset, TIME_WINDOWS - 1)(rng);
+        int validReturnWindows = -1;
 
-        while (routes[retRouteId].demandPerWindow[retWindow] == 0 || retWindow == outWindow)
-        {
-            retWindow = std::uniform_int_distribution<>(outWindow + returnOffset, TIME_WINDOWS - 1)(rng);
-            returnOffset++;
-            if (outWindow + returnOffset == 28)
-            {
-                returnOffset = -outWindow;
+        for (int i = 1; i < TIME_WINDOWS; ++i) {
+            int potentialReturnWindow = (outWindow + i) % TIME_WINDOWS;
+
+            if (routes[retRouteId].demandPerWindow[potentialReturnWindow] > 0) {
+                validReturnWindows = potentialReturnWindow;
+                break;
             }
         }
+
+        if (validReturnWindows == -1) {
+            return; 
+        }
+
+        int retWindow = validReturnWindows;
+
         int outPax = 0;
         int retPax = 0;
         int freq = 1;
         if (MAX_ASSIGNED_TYPES == 1)
         {
-            //supply atleast 10% of the demand
             int minOutPax = 0;
             int minRetPax = 0;
             if (routeOut.demandPerWindow[outWindow] > 0)
             {
-                minOutPax = routeOut.demandPerWindow[outWindow] * 10 / 100 + 1;
+                minOutPax = routeOut.demandPerWindow[outWindow] * 20 / 100;
             }
             if (routes[retRouteId].demandPerWindow[retWindow] > 0)
             {
-                minRetPax = routes[retRouteId].demandPerWindow[retWindow] * 10 / 100 + 1;
+                minRetPax = routes[retRouteId].demandPerWindow[retWindow] * 20 / 100;
             }
             outPax = std::uniform_int_distribution<>(minOutPax, routeOut.demandPerWindow[outWindow])(rng);
             retPax = std::uniform_int_distribution<>(minRetPax, routes[retRouteId].demandPerWindow[retWindow])(rng);
@@ -292,11 +316,12 @@ namespace GP
             outPax = std::min(aircraft.capacity, routeOut.demandPerWindow[outWindow]);
             retPax = std::min(aircraft.capacity, routes[retRouteId].demandPerWindow[retWindow]);
         }
+       
         if (outPax == 0) return;
 
         individual.schedule.push_back({ acID, outRouteId, outWindow, retWindow, freq, outPax, retPax });
     }
-    void mutate(Individual& individual, std::vector<Route> routes, std::vector<AircraftType> aircraftTypes)
+    void mutate(Individual& individual, const std::vector<Route>& routes, const std::vector<AircraftType>& aircraftTypes)
     {
         int choice = std::uniform_int_distribution<>(0, 4)(rng);
 
@@ -309,6 +334,7 @@ namespace GP
         else if (choice == 1) 
         {
             mutateAddRoute(individual, routes, aircraftTypes);
+            repair(individual, routes, aircraftTypes);
         }
         else if (choice == 2 && !individual.schedule.empty()) {
             // Remove route from schedule
@@ -325,9 +351,10 @@ namespace GP
         {
             mutateAdjustPassengers(individual, routes, aircraftTypes);
         }
+        cleanupSchedule(individual);
     }
 
-    std::pair<Individual, Individual> crossover(const Individual& parent1, const Individual& parent2, std::vector<AircraftType> aircraftTypes, std::vector<Route> routes)
+    std::pair<Individual, Individual> crossover(const Individual& parent1, const Individual& parent2, const std::vector<AircraftType>& aircraftTypes, const std::vector<Route>& routes)
     {
         Individual child1, child2;
         float doCrossover = std::uniform_real_distribution<>(0, 1)(rng);
@@ -341,16 +368,14 @@ namespace GP
         }
         else
         {
-            for (int i = 0; i < AIRCRAFT_TYPES; ++i) 
-            {
-                child1.allowedAircraft[i] = parent1.allowedAircraft[i];
-                child2.allowedAircraft[i] = parent2.allowedAircraft[i];
-            }
+            child1.allowedAircraft = parent1.allowedAircraft;
+            child2.allowedAircraft = parent2.allowedAircraft;
         }
 
         child1.schedule = parent1.schedule;
         child2.schedule = parent2.schedule;
         
+
         repair(child1, routes, aircraftTypes);
         repair(child2, routes, aircraftTypes);
         
@@ -359,7 +384,7 @@ namespace GP
 #pragma endregion
 
 #pragma region MAIN
-    Individual search(std::vector<Route> routes, std::vector<AircraftType> aircraftTypes, 
+    Individual search(const std::vector<Route>& routes, const std::vector<AircraftType>& aircraftTypes, 
         int generations, int populationSize, GPU::DeviceDataManager deviceData)
     {
         Population pop = initializePopulation(routes, aircraftTypes);
@@ -437,6 +462,39 @@ namespace util
         }
         return fdayShift;
     }
+
+    void writeFlightsPerDestination(const Individual& bestIndividual, const std::vector<Route>& routes)
+    {
+        std::map<std::string, int> destinationFrequencies;
+
+        for (const auto& trip : bestIndividual.schedule) {
+            const Route& outboundRoute = routes[trip.outboundRouteId];
+
+            destinationFrequencies[outboundRoute.destinationIcao] += trip.frequency;
+        }
+
+#ifdef GPU_ON
+        std::ofstream file(String(RESULT) + "/best_individualGPU" + std::to_string(MAX_ASSIGNED_TYPES) + "_flights_per_destination.txt");
+#else
+        std::ofstream file(String(RESULT) + "/best_individualCPU" + std::to_string(MAX_ASSIGNED_TYPES) + "_flights_per_destination.txt");
+#endif
+
+        if (!file.is_open()) {
+            std::cerr << "Error: Unable to open file for writing flight frequencies per destination." << std::endl;
+            return;
+        }
+
+        file << "Destination_ICAO;Total_Frequency\n";
+
+        for (const auto& pair : destinationFrequencies) {
+            const std::string& destinationIcao = pair.first;
+            int totalFrequency = pair.second;
+            file << destinationIcao << ";" << totalFrequency << "\n";
+        }
+
+        file.close();
+    }
+
     void writeSolutionTimes(std::vector<double>elapsedTimes)
     {
         std::ofstream file(String(RESULT) + "/times_solution" + std::to_string(MAX_ASSIGNED_TYPES) + ".txt", std::ios_base::app);
@@ -462,7 +520,7 @@ namespace util
         }
         file.close();
     }
-    void writeBestIndividual(Individual& ind, InstanceType flightLegs, InstanceType instance,std::vector<Route> routes, std::vector<AircraftType> aircraftTypes)
+    void writeBestIndividual(Individual& ind, InstanceType flightLegs, InstanceType instance, const std::vector<Route>& routes, const std::vector<AircraftType>& aircraftTypes)
     {
 #ifdef GPU_ON
         std::ofstream file(String(RESULT)+"/best_individualGPU"+std::to_string(MAX_ASSIGNED_TYPES)+".csv");
@@ -470,7 +528,6 @@ namespace util
         std::ofstream file(String(RESULT)+"/best_individualCPU"+std::to_string(MAX_ASSIGNED_TYPES)+".csv");
 #endif
         StringMatrix aircrafts = util::aeronave(instance);
-        //sortBestFlight(ind);
         std::map<int, String> days;
         std::map<int, String> aircraftName;
         std::vector<std::map<int, String>> odPairs;
